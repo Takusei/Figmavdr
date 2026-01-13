@@ -1,4 +1,4 @@
-import { ChevronRight, ChevronDown, Folder, File } from "lucide-react";
+import { ChevronRight, ChevronDown, Folder, File as FileIcon } from "lucide-react";
 import { useState } from "react";
 
 export interface FileNode {
@@ -65,7 +65,7 @@ export function TreeView({ nodes, onFileSelect, selectedPath, level = 0 }: TreeV
               {node.isDirectory ? (
                 <Folder className="w-4 h-4 flex-shrink-0 text-blue-500" />
               ) : (
-                <File className="w-4 h-4 flex-shrink-0 text-gray-500" />
+                <FileIcon className="w-4 h-4 flex-shrink-0 text-gray-500" />
               )}
               <span className="truncate text-sm">{node.name}</span>
             </div>

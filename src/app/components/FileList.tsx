@@ -1,5 +1,5 @@
 import { FileNode } from "./TreeView";
-import { File, Folder } from "lucide-react";
+import { File as FileIcon, Folder } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -64,7 +64,7 @@ export function FileList({ files, onFileSelect, selectedPath }: FileListProps) {
                 {file.isDirectory ? (
                   <Folder className="w-5 h-5 text-blue-500" />
                 ) : (
-                  <File className="w-5 h-5 text-gray-500" />
+                  <FileIcon className="w-5 h-5 text-gray-500" />
                 )}
               </TableCell>
               <TableCell className="font-medium">{file.name}</TableCell>

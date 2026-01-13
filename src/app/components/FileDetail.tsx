@@ -1,5 +1,5 @@
 import { FileNode } from "./TreeView";
-import { X, FileText, Image as ImageIcon, FileCode, File } from "lucide-react";
+import { X, FileText, Image as ImageIcon, FileCode, File as FileIcon } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from "@/app/components/ui/breadcrumb";
 import { useState, useEffect } from "react";
@@ -23,13 +23,14 @@ export function FileDetail({ file, onClose }: FileDetailProps) {
     // Handle both FileSystemFileHandle (modern API) and File (fallback)
     let fileObj: File;
     
-    if (file.handle instanceof File) {
-      // Fallback method - handle is already a File object
-      fileObj = file.handle;
-    } else {
+    // Check if handle has a 'getFile' method (FileSystemFileHandle) or is already a File object
+    if (file.handle && typeof (file.handle as any).getFile === 'function') {
       // Modern API - handle is FileSystemFileHandle
       const fileHandle = file.handle as FileSystemFileHandle;
       fileObj = await fileHandle.getFile();
+    } else {
+      // Fallback method - handle is already a File object
+      fileObj = file.handle as any;
     }
 
     // Determine preview type based on file extension
@@ -102,7 +103,7 @@ export function FileDetail({ file, onClose }: FileDetailProps) {
     } else if (["txt", "md", "json", "xml", "csv"].includes(ext || "")) {
       return <FileText className="w-8 h-8 text-orange-500" />;
     } else {
-      return <File className="w-8 h-8 text-gray-500" />;
+      return <FileIcon className="w-8 h-8 text-gray-500" />;
     }
   };
 
@@ -193,7 +194,7 @@ export function FileDetail({ file, onClose }: FileDetailProps) {
               )}
               {previewType === "unsupported" && (
                 <div className="text-center py-12 text-gray-500">
-                  <File className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+                  <FileIcon className="w-16 h-16 mx-auto mb-4 text-gray-400" />
                   <p>Preview not available for this file type</p>
                 </div>
               )}
