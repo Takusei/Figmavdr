@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { FolderOpen, Search, AlertCircle } from "lucide-react";
+import { FolderOpen, Search, Download } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
 import { TreeView, FileNode } from "@/app/components/TreeView";
 import { FileList } from "@/app/components/FileList";
 import { FileDetail } from "@/app/components/FileDetail";
 import { ScrollArea } from "@/app/components/ui/scroll-area";
-import { Alert, AlertDescription, AlertTitle } from "@/app/components/ui/alert";
+import * as XLSX from "xlsx";
 
 export default function App() {
   const [rootDirectory, setRootDirectory] = useState<FileNode | null>(null);
@@ -229,6 +229,93 @@ export default function App() {
     file.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const handleExportToExcel = () => {
+    // Prepare data for Excel export
+    const exportData = filteredFiles.map((file) => {
+      const formatFileSize = (bytes?: number) => {
+        if (!bytes) return "—";
+        const units = ["B", "KB", "MB", "GB", "TB"];
+        let size = bytes;
+        let unitIndex = 0;
+        while (size >= 1024 && unitIndex < units.length - 1) {
+          size /= 1024;
+          unitIndex++;
+        }
+        return `${size.toFixed(2)} ${units[unitIndex]}`;
+      };
+
+      const formatDate = (timestamp?: number) => {
+        if (!timestamp) return "—";
+        return new Date(timestamp).toLocaleString();
+      };
+
+      const getFileExtension = (filename: string) => {
+        const parts = filename.split(".");
+        return parts.length > 1 ? parts[parts.length - 1].toUpperCase() : "—";
+      };
+
+      const generateSummary = (file: FileNode) => {
+        if (file.isDirectory) {
+          return `Folder containing ${file.children?.length || 0} items`;
+        }
+        
+        const ext = file.name.split(".").pop()?.toLowerCase();
+        const sizeStr = formatFileSize(file.size);
+        
+        if (["jpg", "jpeg", "png", "gif", "bmp", "webp"].includes(ext || "")) {
+          return `Image file (${ext?.toUpperCase()}), ${sizeStr}`;
+        } else if (["txt", "md"].includes(ext || "")) {
+          return `Text document, ${sizeStr}`;
+        } else if (["js", "jsx", "ts", "tsx"].includes(ext || "")) {
+          return `JavaScript/TypeScript file, ${sizeStr}`;
+        } else if (["json", "xml", "csv"].includes(ext || "")) {
+          return `Data file (${ext?.toUpperCase()}), ${sizeStr}`;
+        } else if (["pdf"].includes(ext || "")) {
+          return `PDF document, ${sizeStr}`;
+        } else if (["doc", "docx"].includes(ext || "")) {
+          return `Word document, ${sizeStr}`;
+        } else if (["xls", "xlsx"].includes(ext || "")) {
+          return `Excel spreadsheet, ${sizeStr}`;
+        } else {
+          return `${ext?.toUpperCase() || "Unknown"} file, ${sizeStr}`;
+        }
+      };
+
+      return {
+        Name: file.name,
+        Type: file.isDirectory ? "Folder" : getFileExtension(file.name),
+        Size: formatFileSize(file.size),
+        "Last Modified": formatDate(file.lastModified),
+        Summary: generateSummary(file),
+        Path: file.path,
+      };
+    });
+
+    // Create worksheet
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    
+    // Set column widths
+    worksheet['!cols'] = [
+      { wch: 30 }, // Name
+      { wch: 10 }, // Type
+      { wch: 12 }, // Size
+      { wch: 20 }, // Last Modified
+      { wch: 40 }, // Summary
+      { wch: 50 }, // Path
+    ];
+
+    // Create workbook
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Files");
+
+    // Generate file name with timestamp
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, -5);
+    const fileName = `VDR_Export_${timestamp}.xlsx`;
+
+    // Save file
+    XLSX.writeFile(workbook, fileName);
+  };
+
   if (showFileDetail && selectedFile) {
     return (
       <FileDetail
@@ -305,6 +392,14 @@ export default function App() {
                 <span className="text-sm text-gray-500">
                   {filteredFiles.length} items
                 </span>
+                <Button 
+                  onClick={handleExportToExcel}
+                  variant="outline"
+                  disabled={filteredFiles.length === 0}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Export to Excel
+                </Button>
               </div>
             </div>
             <div className="flex-1 overflow-hidden">

@@ -38,6 +38,33 @@ export function FileList({ files, onFileSelect, selectedPath }: FileListProps) {
     return parts.length > 1 ? parts[parts.length - 1].toUpperCase() : "—";
   };
 
+  const generateSummary = (file: FileNode) => {
+    if (file.isDirectory) {
+      return `Folder containing ${file.children?.length || 0} items`;
+    }
+    
+    const ext = file.name.split(".").pop()?.toLowerCase();
+    const sizeStr = formatFileSize(file.size);
+    
+    if (["jpg", "jpeg", "png", "gif", "bmp", "webp"].includes(ext || "")) {
+      return `Image file (${ext?.toUpperCase()}), ${sizeStr}`;
+    } else if (["txt", "md"].includes(ext || "")) {
+      return `Text document, ${sizeStr}`;
+    } else if (["js", "jsx", "ts", "tsx"].includes(ext || "")) {
+      return `JavaScript/TypeScript file, ${sizeStr}`;
+    } else if (["json", "xml", "csv"].includes(ext || "")) {
+      return `Data file (${ext?.toUpperCase()}), ${sizeStr}`;
+    } else if (["pdf"].includes(ext || "")) {
+      return `PDF document, ${sizeStr}`;
+    } else if (["doc", "docx"].includes(ext || "")) {
+      return `Word document, ${sizeStr}`;
+    } else if (["xls", "xlsx"].includes(ext || "")) {
+      return `Excel spreadsheet, ${sizeStr}`;
+    } else {
+      return `${ext?.toUpperCase() || "Unknown"} file, ${sizeStr}`;
+    }
+  };
+
   return (
     <div className="h-full overflow-auto">
       <Table>
@@ -48,6 +75,7 @@ export function FileList({ files, onFileSelect, selectedPath }: FileListProps) {
             <TableHead>Type</TableHead>
             <TableHead>Size</TableHead>
             <TableHead>Last Modified</TableHead>
+            <TableHead>Summary</TableHead>
             <TableHead>Path</TableHead>
           </TableRow>
         </TableHeader>
@@ -73,6 +101,9 @@ export function FileList({ files, onFileSelect, selectedPath }: FileListProps) {
               </TableCell>
               <TableCell>{formatFileSize(file.size)}</TableCell>
               <TableCell>{formatDate(file.lastModified)}</TableCell>
+              <TableCell className="text-gray-600 text-sm max-w-md">
+                {generateSummary(file)}
+              </TableCell>
               <TableCell className="text-gray-500 text-sm truncate max-w-xs">
                 {file.path}
               </TableCell>
