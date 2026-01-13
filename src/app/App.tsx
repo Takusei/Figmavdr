@@ -7,6 +7,11 @@ import { FileList } from "@/app/components/FileList";
 import { FileDetail } from "@/app/components/FileDetail";
 import { ScrollArea } from "@/app/components/ui/scroll-area";
 import * as XLSX from "xlsx";
+import {
+  ResizablePanelGroup,
+  ResizablePanel,
+  ResizableHandle,
+} from "@/app/components/ui/resizable";
 
 export default function App() {
   const [rootDirectory, setRootDirectory] = useState<FileNode | null>(null);
@@ -356,60 +361,68 @@ export default function App() {
         </div>
       ) : (
         /* Main Content */
-        <div className="flex-1 flex overflow-hidden">
-          {/* Left Sidebar - Tree View */}
-          <div className="w-80 bg-white border-r flex flex-col">
-            <div className="p-4 border-b">
-              <h2 className="font-semibold text-gray-700 mb-2">Folder Structure</h2>
-              <p className="text-sm text-gray-500 truncate">{rootDirectory.path}</p>
-            </div>
-            <ScrollArea className="flex-1">
-              <div className="p-2">
-                <TreeView
-                  nodes={[rootDirectory]}
-                  onFileSelect={handleFileSelect}
-                  selectedPath={selectedFile?.path}
-                />
+        <div className="flex-1 overflow-hidden">
+          <ResizablePanelGroup direction="horizontal">
+            {/* Left Sidebar - Tree View */}
+            <ResizablePanel defaultSize={25} minSize={15} maxSize={50}>
+              <div className="h-full bg-white flex flex-col">
+                <div className="p-4 border-b">
+                  <h2 className="font-semibold text-gray-700 mb-2">Folder Structure</h2>
+                  <p className="text-sm text-gray-500 truncate">{rootDirectory.path}</p>
+                </div>
+                <ScrollArea className="flex-1">
+                  <div className="p-2">
+                    <TreeView
+                      nodes={[rootDirectory]}
+                      onFileSelect={handleFileSelect}
+                      selectedPath={selectedFile?.path}
+                    />
+                  </div>
+                </ScrollArea>
               </div>
-            </ScrollArea>
-          </div>
+            </ResizablePanel>
 
-          {/* Right Content - File List */}
-          <div className="flex-1 flex flex-col bg-white">
-            <div className="p-4 border-b">
-              <div className="flex items-center gap-4">
-                <h2 className="font-semibold text-gray-700">All Files</h2>
-                <div className="flex-1 max-w-md relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <Input
-                    type="text"
-                    placeholder="Search files..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
+            <ResizableHandle withHandle />
+
+            {/* Right Content - File List */}
+            <ResizablePanel defaultSize={75}>
+              <div className="h-full flex flex-col bg-white">
+                <div className="p-4 border-b">
+                  <div className="flex items-center gap-4">
+                    <h2 className="font-semibold text-gray-700">All Files</h2>
+                    <div className="flex-1 max-w-md relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <Input
+                        type="text"
+                        placeholder="Search files..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                    <span className="text-sm text-gray-500">
+                      {filteredFiles.length} items
+                    </span>
+                    <Button 
+                      onClick={handleExportToExcel}
+                      variant="outline"
+                      disabled={filteredFiles.length === 0}
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      Export to Excel
+                    </Button>
+                  </div>
+                </div>
+                <div className="flex-1 overflow-hidden">
+                  <FileList
+                    files={filteredFiles}
+                    onFileSelect={handleFileSelect}
+                    selectedPath={selectedFile?.path}
                   />
                 </div>
-                <span className="text-sm text-gray-500">
-                  {filteredFiles.length} items
-                </span>
-                <Button 
-                  onClick={handleExportToExcel}
-                  variant="outline"
-                  disabled={filteredFiles.length === 0}
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Export to Excel
-                </Button>
               </div>
-            </div>
-            <div className="flex-1 overflow-hidden">
-              <FileList
-                files={filteredFiles}
-                onFileSelect={handleFileSelect}
-                selectedPath={selectedFile?.path}
-              />
-            </div>
-          </div>
+            </ResizablePanel>
+          </ResizablePanelGroup>
         </div>
       )}
     </div>
