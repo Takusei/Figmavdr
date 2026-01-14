@@ -8,6 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/app/components/ui/table";
+import { useState, useRef, useEffect } from "react";
 
 interface FileListProps {
   files: FileNode[];
@@ -16,6 +17,55 @@ interface FileListProps {
 }
 
 export function FileList({ files, onFileSelect, selectedPath }: FileListProps) {
+  const [columnWidths, setColumnWidths] = useState({
+    icon: 50,
+    name: 250,
+    type: 100,
+    size: 120,
+    lastModified: 180,
+    summary: 350,
+    path: 300,
+  });
+
+  const [resizing, setResizing] = useState<string | null>(null);
+  const startXRef = useRef(0);
+  const startWidthRef = useRef(0);
+
+  const handleMouseDown = (column: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    setResizing(column);
+    startXRef.current = e.clientX;
+    startWidthRef.current = columnWidths[column as keyof typeof columnWidths];
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!resizing) return;
+
+      const diff = e.clientX - startXRef.current;
+      const newWidth = Math.max(50, startWidthRef.current + diff);
+
+      setColumnWidths((prev) => ({
+        ...prev,
+        [resizing]: newWidth,
+      }));
+    };
+
+    const handleMouseUp = () => {
+      setResizing(null);
+    };
+
+    if (resizing) {
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [resizing]);
+
   const formatFileSize = (bytes?: number) => {
     if (!bytes) return "—";
     const units = ["B", "KB", "MB", "GB", "TB"];
@@ -70,13 +120,47 @@ export function FileList({ files, onFileSelect, selectedPath }: FileListProps) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-12"></TableHead>
-            <TableHead>Name</TableHead>
-            <TableHead>Type</TableHead>
-            <TableHead>Size</TableHead>
-            <TableHead>Last Modified</TableHead>
-            <TableHead>Summary</TableHead>
-            <TableHead>Path</TableHead>
+            <TableHead style={{ width: columnWidths.icon, position: "relative" }}>
+              {/* Icon column - no resize */}
+            </TableHead>
+            <TableHead style={{ width: columnWidths.name, position: "relative" }}>
+              Name
+              <div
+                className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-400 bg-gray-300"
+                onMouseDown={(e) => handleMouseDown("name", e)}
+              />
+            </TableHead>
+            <TableHead style={{ width: columnWidths.type, position: "relative" }}>
+              Type
+              <div
+                className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-400 bg-gray-300"
+                onMouseDown={(e) => handleMouseDown("type", e)}
+              />
+            </TableHead>
+            <TableHead style={{ width: columnWidths.size, position: "relative" }}>
+              Size
+              <div
+                className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-400 bg-gray-300"
+                onMouseDown={(e) => handleMouseDown("size", e)}
+              />
+            </TableHead>
+            <TableHead style={{ width: columnWidths.lastModified, position: "relative" }}>
+              Last Modified
+              <div
+                className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-400 bg-gray-300"
+                onMouseDown={(e) => handleMouseDown("lastModified", e)}
+              />
+            </TableHead>
+            <TableHead style={{ width: columnWidths.summary, position: "relative" }}>
+              Summary
+              <div
+                className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-400 bg-gray-300"
+                onMouseDown={(e) => handleMouseDown("summary", e)}
+              />
+            </TableHead>
+            <TableHead style={{ width: columnWidths.path, position: "relative" }}>
+              Path
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -88,23 +172,29 @@ export function FileList({ files, onFileSelect, selectedPath }: FileListProps) {
               }`}
               onClick={() => onFileSelect(file)}
             >
-              <TableCell>
+              <TableCell style={{ width: columnWidths.icon }}>
                 {file.isDirectory ? (
                   <Folder className="w-5 h-5 text-blue-500" />
                 ) : (
                   <FileIcon className="w-5 h-5 text-gray-500" />
                 )}
               </TableCell>
-              <TableCell className="font-medium">{file.name}</TableCell>
-              <TableCell>
+              <TableCell style={{ width: columnWidths.name }} className="font-medium">
+                {file.name}
+              </TableCell>
+              <TableCell style={{ width: columnWidths.type }}>
                 {file.isDirectory ? "Folder" : getFileExtension(file.name)}
               </TableCell>
-              <TableCell>{formatFileSize(file.size)}</TableCell>
-              <TableCell>{formatDate(file.lastModified)}</TableCell>
-              <TableCell className="text-gray-600 text-sm max-w-md">
+              <TableCell style={{ width: columnWidths.size }}>
+                {formatFileSize(file.size)}
+              </TableCell>
+              <TableCell style={{ width: columnWidths.lastModified }}>
+                {formatDate(file.lastModified)}
+              </TableCell>
+              <TableCell style={{ width: columnWidths.summary }} className="text-gray-600 text-sm">
                 {generateSummary(file)}
               </TableCell>
-              <TableCell className="text-gray-500 text-sm truncate max-w-xs">
+              <TableCell style={{ width: columnWidths.path }} className="text-gray-500 text-sm truncate">
                 {file.path}
               </TableCell>
             </TableRow>
