@@ -250,6 +250,8 @@ function App() {
       );
     } finally {
       setIsLoading(false);
+      // Re-check for changes after regeneration
+      checkForChanges();
     }
   };
 
@@ -303,39 +305,15 @@ function App() {
         return parts.length > 1 ? parts[parts.length - 1].toUpperCase() : "—";
       };
 
-      const generateSummary = (file: FileNode) => {
-        if (file.isDirectory) {
-          return `Folder containing ${file.children?.length || 0} items`;
-        }
-
-        const ext = file.name.split(".").pop()?.toLowerCase();
-        const sizeStr = formatFileSize(file.size);
-
-        if (["jpg", "jpeg", "png", "gif", "bmp", "webp"].includes(ext || "")) {
-          return `Image file (${ext?.toUpperCase()}), ${sizeStr}`;
-        } else if (["txt", "md"].includes(ext || "")) {
-          return `Text document, ${sizeStr}`;
-        } else if (["js", "jsx", "ts", "tsx"].includes(ext || "")) {
-          return `JavaScript/TypeScript file, ${sizeStr}`;
-        } else if (["json", "xml", "csv"].includes(ext || "")) {
-          return `Data file (${ext?.toUpperCase()}), ${sizeStr}`;
-        } else if (["pdf"].includes(ext || "")) {
-          return `PDF document, ${sizeStr}`;
-        } else if (["doc", "docx"].includes(ext || "")) {
-          return `Word document, ${sizeStr}`;
-        } else if (["xls", "xlsx"].includes(ext || "")) {
-          return `Excel spreadsheet, ${sizeStr}`;
-        } else {
-          return `${ext?.toUpperCase() || "Unknown"} file, ${sizeStr}`;
-        }
-      };
+      // Get the actual summary from API data
+      const apiSummary = summaries.find(s => s.filePath === file.path);
 
       return {
         Name: file.name,
         Type: file.isDirectory ? "Folder" : getFileExtension(file.name),
         Size: formatFileSize(file.size),
         "Last Modified": formatDate(file.lastModified),
-        Summary: generateSummary(file),
+        Summary: apiSummary?.summary || "No summary available",
         Path: file.path,
       };
     });
