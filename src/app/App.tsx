@@ -216,6 +216,16 @@ function App() {
     setShowFileDetail(true);
   };
 
+  const flattenFiles = (node: FileNode): FileNode[] => {
+    let files: FileNode[] = [node];
+    if (node.children) {
+      node.children.forEach((child) => {
+        files = files.concat(flattenFiles(child));
+      });
+    }
+    return files;
+  };
+
   const filteredFiles = rootDirectory
     ? flattenFiles(rootDirectory).filter((file) =>
         file.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -313,16 +323,6 @@ function App() {
 
     // Save file
     XLSX.writeFile(workbook, fileName);
-  };
-
-  const flattenFiles = (node: FileNode): FileNode[] => {
-    let files: FileNode[] = [node];
-    if (node.children) {
-      node.children.forEach((child) => {
-        files = files.concat(flattenFiles(child));
-      });
-    }
-    return files;
   };
 
   if (showFileDetail && selectedFile) {
