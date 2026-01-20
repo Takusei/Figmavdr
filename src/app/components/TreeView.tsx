@@ -1,5 +1,6 @@
-import { ChevronRight, ChevronDown, Folder, File as FileIcon } from "lucide-react";
+import { ChevronRight, ChevronDown, Folder, File as FileIcon, ChevronsRight, ChevronsDown } from "lucide-react";
 import { useState } from "react";
+import { Button } from "@/app/components/ui/button";
 
 export interface FileNode {
   name: string;
@@ -16,23 +17,97 @@ interface TreeViewProps {
   onFileSelect: (node: FileNode) => void;
   selectedPath?: string;
   level?: number;
+  expandedDirs?: Set<string>;
+  onToggleDirectory?: (path: string) => void;
 }
 
-export function TreeView({ nodes, onFileSelect, selectedPath, level = 0 }: TreeViewProps) {
-  const [expandedDirs, setExpandedDirs] = useState<Set<string>>(new Set());
+// Helper function to get all directory paths
+const getAllDirectoryPaths = (nodes: FileNode[]): string[] => {
+  const paths: string[] = [];
+  const traverse = (nodeList: FileNode[]) => {
+    nodeList.forEach(node => {
+      if (node.isDirectory) {
+        paths.push(node.path);
+        if (node.children) {
+          traverse(node.children);
+        }
+      }
+    });
+  };
+  traverse(nodes);
+  return paths;
+};
+
+export function TreeView({ nodes, onFileSelect, selectedPath, level = 0, expandedDirs: externalExpandedDirs, onToggleDirectory: externalToggleDirectory }: TreeViewProps) {
+  const [internalExpandedDirs, setInternalExpandedDirs] = useState<Set<string>>(new Set());
+  
+  // Use external state if provided, otherwise use internal state
+  const expandedDirs = externalExpandedDirs ?? internalExpandedDirs;
+  const setExpandedDirs = externalToggleDirectory ? undefined : setInternalExpandedDirs;
 
   const toggleDirectory = (path: string) => {
-    const newExpanded = new Set(expandedDirs);
-    if (newExpanded.has(path)) {
-      newExpanded.delete(path);
+    if (externalToggleDirectory) {
+      externalToggleDirectory(path);
     } else {
-      newExpanded.add(path);
+      const newExpanded = new Set(expandedDirs);
+      if (newExpanded.has(path)) {
+        newExpanded.delete(path);
+      } else {
+        newExpanded.add(path);
+      }
+      setInternalExpandedDirs(newExpanded);
     }
-    setExpandedDirs(newExpanded);
+  };
+
+  const expandAll = () => {
+    const allPaths = getAllDirectoryPaths(nodes);
+    if (externalToggleDirectory) {
+      // If using external state, toggle each path
+      allPaths.forEach(path => {
+        if (!expandedDirs.has(path)) {
+          externalToggleDirectory(path);
+        }
+      });
+    } else {
+      setInternalExpandedDirs(new Set(allPaths));
+    }
+  };
+
+  const collapseAll = () => {
+    if (externalToggleDirectory) {
+      // If using external state, toggle each expanded path
+      expandedDirs.forEach(path => {
+        externalToggleDirectory(path);
+      });
+    } else {
+      setInternalExpandedDirs(new Set());
+    }
   };
 
   return (
     <div className="select-none">
+      {level === 0 && (
+        <div className="flex items-center gap-2 px-2 py-2 border-b bg-gray-50">
+          <Button 
+            size="sm" 
+            variant="outline"
+            onClick={expandAll}
+            className="flex items-center gap-1 text-xs"
+          >
+            <ChevronsDown className="w-3 h-3" />
+            Expand All
+          </Button>
+          <Button 
+            size="sm" 
+            variant="outline"
+            onClick={collapseAll}
+            className="flex items-center gap-1 text-xs"
+          >
+            <ChevronsRight className="w-3 h-3" />
+            Collapse All
+          </Button>
+        </div>
+      )}
       {nodes.map((node) => {
         const isExpanded = expandedDirs.has(node.path);
         const isSelected = selectedPath === node.path;
@@ -75,6 +150,8 @@ export function TreeView({ nodes, onFileSelect, selectedPath, level = 0 }: TreeV
                 onFileSelect={onFileSelect}
                 selectedPath={selectedPath}
                 level={level + 1}
+                expandedDirs={expandedDirs}
+                onToggleDirectory={toggleDirectory}
               />
             )}
           </div>
