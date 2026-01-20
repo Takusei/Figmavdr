@@ -9,14 +9,16 @@ import {
   TableRow,
 } from "@/app/components/ui/table";
 import { useState, useRef, useEffect } from "react";
+import type { FileSummary } from "@/app/App";
 
 interface FileListProps {
   files: FileNode[];
+  summaries: FileSummary[];
   onFileSelect: (node: FileNode) => void;
   selectedPath?: string;
 }
 
-export function FileList({ files, onFileSelect, selectedPath }: FileListProps) {
+export function FileList({ files, summaries, onFileSelect, selectedPath }: FileListProps) {
   const [columnWidths, setColumnWidths] = useState({
     icon: 50,
     name: 250,
@@ -89,6 +91,13 @@ export function FileList({ files, onFileSelect, selectedPath }: FileListProps) {
   };
 
   const generateSummary = (file: FileNode) => {
+    // First check if we have a summary from the API
+    const apiSummary = summaries.find(s => s.filePath === file.path);
+    if (apiSummary && apiSummary.summary) {
+      return apiSummary.summary;
+    }
+
+    // Fallback to generated summary
     if (file.isDirectory) {
       return `Folder containing ${file.children?.length || 0} items`;
     }

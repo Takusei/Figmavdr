@@ -22,6 +22,21 @@ interface ApiFileNode {
   children: ApiFileNode[] | null;
 }
 
+export interface FileSummary {
+  filePath: string;
+  fileName: string;
+  fileSize: number;
+  lastModifiedTime: number;
+  fileType: string;
+  summary: string;
+  duration: number;
+}
+
+interface SummarizeResponse {
+  summaries: FileSummary[];
+  duration: number;
+}
+
 function App() {
   const [folderPath, setFolderPath] = useState("");
   const [rootDirectory, setRootDirectory] = useState<FileNode | null>(null);
@@ -30,6 +45,8 @@ function App() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [summaries, setSummaries] = useState<FileSummary[]>([]);
+  const [apiBaseUrl, setApiBaseUrl] = useState("http://localhost:8000");
 
   // Convert API response to FileNode structure
   const convertApiNodeToFileNode = (apiNode: ApiFileNode): FileNode => {
@@ -56,7 +73,8 @@ function App() {
     setError(null);
 
     try {
-      const response = await fetch("/api/v1/tree", {
+      // Fetch tree structure
+      const treeResponse = await fetch(`${apiBaseUrl}/api/v1/tree`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -67,25 +85,44 @@ function App() {
         }),
       });
 
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status} ${response.statusText}`);
+      if (!treeResponse.ok) {
+        throw new Error(`Tree API error: ${treeResponse.status} ${treeResponse.statusText}`);
       }
 
-      const data: ApiFileNode[] = await response.json();
+      const treeData: ApiFileNode[] = await treeResponse.json();
 
-      if (!data || data.length === 0) {
-        throw new Error("No data returned from API");
+      if (!treeData || treeData.length === 0) {
+        throw new Error("No data returned from tree API");
       }
+
+      // Fetch summaries
+      const summaryResponse = await fetch(`${apiBaseUrl}/api/v1/summarize/folder`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          folderPath: folderPath.trim(),
+          regenerate: false,
+        }),
+      });
+
+      if (!summaryResponse.ok) {
+        throw new Error(`Summary API error: ${summaryResponse.status} ${summaryResponse.statusText}`);
+      }
+
+      const summaryData: SummarizeResponse = await summaryResponse.json();
 
       // Create root node
       const rootNode: FileNode = {
         name: folderPath.split("/").pop() || folderPath,
         path: folderPath,
         isDirectory: true,
-        children: data.map(convertApiNodeToFileNode),
+        children: treeData.map(convertApiNodeToFileNode),
       };
 
       setRootDirectory(rootNode);
+      setSummaries(summaryData.summaries);
       setError(null);
     } catch (err) {
       console.error("Error loading folder:", err);
@@ -93,6 +130,7 @@ function App() {
         err instanceof Error ? err.message : "Failed to load folder structure"
       );
       setRootDirectory(null);
+      setSummaries([]);
     } finally {
       setIsLoading(false);
     }
@@ -107,7 +145,8 @@ function App() {
     setError(null);
 
     try {
-      const response = await fetch("/api/v1/tree", {
+      // Fetch tree structure with regenerate flag
+      const treeResponse = await fetch(`${apiBaseUrl}/api/v1/tree`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -118,21 +157,40 @@ function App() {
         }),
       });
 
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status} ${response.statusText}`);
+      if (!treeResponse.ok) {
+        throw new Error(`Tree API error: ${treeResponse.status} ${treeResponse.statusText}`);
       }
 
-      const data: ApiFileNode[] = await response.json();
+      const treeData: ApiFileNode[] = await treeResponse.json();
+
+      // Fetch summaries with regenerate flag
+      const summaryResponse = await fetch(`${apiBaseUrl}/api/v1/summarize/folder`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          folderPath: folderPath.trim(),
+          regenerate: true,
+        }),
+      });
+
+      if (!summaryResponse.ok) {
+        throw new Error(`Summary API error: ${summaryResponse.status} ${summaryResponse.statusText}`);
+      }
+
+      const summaryData: SummarizeResponse = await summaryResponse.json();
 
       // Create root node
       const rootNode: FileNode = {
         name: folderPath.split("/").pop() || folderPath,
         path: folderPath,
         isDirectory: true,
-        children: data.map(convertApiNodeToFileNode),
+        children: treeData.map(convertApiNodeToFileNode),
       };
 
       setRootDirectory(rootNode);
+      setSummaries(summaryData.summaries);
       setError(null);
     } catch (err) {
       console.error("Error regenerating folder:", err);
@@ -383,6 +441,7 @@ function App() {
                 <div className="flex-1 overflow-hidden">
                   <FileList
                     files={filteredFiles}
+                    summaries={summaries}
                     onFileSelect={handleFileSelect}
                     selectedPath={selectedFile?.path}
                   />
