@@ -56,7 +56,7 @@ function App() {
     if (rootDirectory && !isLoading) {
       checkForChanges();
     }
-  }, [rootDirectory]);
+  }, [rootDirectory?.path]); // Only re-run when the path changes, not the entire object
 
   // Check if folder structure has changed
   const checkForChanges = async () => {
@@ -399,29 +399,46 @@ function App() {
 
       {/* Header */}
       <header className="bg-white border-b px-6 py-4">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold text-gray-900">Virtual Data Room</h1>
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between gap-4">
+          <h1 className="text-2xl font-semibold text-gray-900 whitespace-nowrap">Virtual Data Room</h1>
+          <div className="flex items-center gap-2 flex-1 max-w-2xl">
+            <Input
+              type="text"
+              placeholder="Enter folder path..."
+              value={folderPath}
+              onChange={(e) => setFolderPath(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !isLoading) {
+                  handleLoadFolder();
+                }
+              }}
+              className="flex-1"
+            />
             <Button
               onClick={handleLoadFolder}
-              disabled={isLoading}
+              disabled={isLoading || !folderPath.trim()}
               size="sm"
-              variant="outline"
+              variant="default"
             >
               <FolderOpen className="w-4 h-4 mr-2" />
-              {isLoading ? "Loading..." : "Load Folder"}
+              {isLoading ? "Loading..." : "Load"}
             </Button>
-            <Button
-              onClick={handleRegenerate}
-              disabled={isLoading || !rootDirectory}
-              size="sm"
-              variant="outline"
-            >
-              <FolderOpen className="w-4 h-4 mr-2" />
-              {isLoading ? "Loading..." : "Regenerate"}
-            </Button>
+            {rootDirectory && (
+              <Button
+                onClick={handleRegenerate}
+                disabled={isLoading}
+                size="sm"
+                variant="outline"
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Regenerate
+              </Button>
+            )}
           </div>
         </div>
+        {error && (
+          <p className="text-red-500 mt-2 text-sm">{error}</p>
+        )}
       </header>
 
       {!rootDirectory ? (
