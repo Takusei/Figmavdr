@@ -335,6 +335,23 @@ function App() {
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">
+      {/* Loading Dialog */}
+      {isLoading && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Backdrop with blur */}
+          <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" />
+          
+          {/* Loading Dialog */}
+          <div className="relative bg-white rounded-lg shadow-2xl p-8 flex flex-col items-center gap-4 min-w-[300px]">
+            <Loader2 className="w-12 h-12 animate-spin text-blue-600" />
+            <div className="text-center">
+              <h3 className="text-lg font-semibold text-gray-900">Loading...</h3>
+              <p className="text-sm text-gray-600 mt-1">Fetching folder structure and summaries</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header className="bg-white border-b px-6 py-4">
         <div className="flex items-center justify-between">
