@@ -19,6 +19,8 @@ interface FileListProps {
 }
 
 export function FileList({ files, summaries, onFileSelect, selectedPath }: FileListProps) {
+  console.log("FileList rendered with:", files.length, "files and", summaries.length, "summaries");
+  
   const [columnWidths, setColumnWidths] = useState({
     icon: 50,
     name: 250,
@@ -126,90 +128,96 @@ export function FileList({ files, summaries, onFileSelect, selectedPath }: FileL
 
   return (
     <div className="h-full overflow-auto">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead style={{ width: columnWidths.icon, position: "relative" }}>
-              {/* Icon column - no resize */}
-            </TableHead>
-            <TableHead style={{ width: columnWidths.name, position: "relative" }}>
-              Name
-              <div
-                className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-400 bg-gray-300"
-                onMouseDown={(e) => handleMouseDown("name", e)}
-              />
-            </TableHead>
-            <TableHead style={{ width: columnWidths.type, position: "relative" }}>
-              Type
-              <div
-                className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-400 bg-gray-300"
-                onMouseDown={(e) => handleMouseDown("type", e)}
-              />
-            </TableHead>
-            <TableHead style={{ width: columnWidths.size, position: "relative" }}>
-              Size
-              <div
-                className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-400 bg-gray-300"
-                onMouseDown={(e) => handleMouseDown("size", e)}
-              />
-            </TableHead>
-            <TableHead style={{ width: columnWidths.lastModified, position: "relative" }}>
-              Last Modified
-              <div
-                className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-400 bg-gray-300"
-                onMouseDown={(e) => handleMouseDown("lastModified", e)}
-              />
-            </TableHead>
-            <TableHead style={{ width: columnWidths.summary, position: "relative" }}>
-              Summary
-              <div
-                className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-400 bg-gray-300"
-                onMouseDown={(e) => handleMouseDown("summary", e)}
-              />
-            </TableHead>
-            <TableHead style={{ width: columnWidths.path, position: "relative" }}>
-              Path
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {files.map((file) => (
-            <TableRow
-              key={file.path}
-              className={`cursor-pointer ${
-                selectedPath === file.path ? "bg-blue-50" : ""
-              }`}
-              onClick={() => onFileSelect(file)}
-            >
-              <TableCell style={{ width: columnWidths.icon }}>
-                {file.isDirectory ? (
-                  <Folder className="w-5 h-5 text-blue-500" />
-                ) : (
-                  <FileIcon className="w-5 h-5 text-gray-500" />
-                )}
-              </TableCell>
-              <TableCell style={{ width: columnWidths.name }} className="font-medium">
-                {file.name}
-              </TableCell>
-              <TableCell style={{ width: columnWidths.type }}>
-                {file.isDirectory ? "Folder" : getFileExtension(file.name)}
-              </TableCell>
-              <TableCell style={{ width: columnWidths.size }}>
-                {formatFileSize(file.size)}
-              </TableCell>
-              <TableCell style={{ width: columnWidths.lastModified }}>
-                {formatDate(file.lastModified)}
-              </TableCell>
-              <TableCell style={{ width: columnWidths.summary }} className="text-gray-600 text-sm">
-                {generateSummary(file)}
-              </TableCell>
-              <TableCell style={{ width: columnWidths.path }} className="text-gray-500 text-sm truncate">
-                {file.path}
-              </TableCell>
+      {files.length === 0 ? (
+        <div className="flex items-center justify-center h-full text-gray-500">
+          <p>No files to display</p>
+        </div>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead style={{ width: columnWidths.icon, position: "relative" }}>
+                {/* Icon column - no resize */}
+              </TableHead>
+              <TableHead style={{ width: columnWidths.name, position: "relative" }}>
+                Name
+                <div
+                  className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-400 bg-gray-300"
+                  onMouseDown={(e) => handleMouseDown("name", e)}
+                />
+              </TableHead>
+              <TableHead style={{ width: columnWidths.type, position: "relative" }}>
+                Type
+                <div
+                  className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-400 bg-gray-300"
+                  onMouseDown={(e) => handleMouseDown("type", e)}
+                />
+              </TableHead>
+              <TableHead style={{ width: columnWidths.size, position: "relative" }}>
+                Size
+                <div
+                  className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-400 bg-gray-300"
+                  onMouseDown={(e) => handleMouseDown("size", e)}
+                />
+              </TableHead>
+              <TableHead style={{ width: columnWidths.lastModified, position: "relative" }}>
+                Last Modified
+                <div
+                  className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-400 bg-gray-300"
+                  onMouseDown={(e) => handleMouseDown("lastModified", e)}
+                />
+              </TableHead>
+              <TableHead style={{ width: columnWidths.summary, position: "relative" }}>
+                Summary
+                <div
+                  className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-400 bg-gray-300"
+                  onMouseDown={(e) => handleMouseDown("summary", e)}
+                />
+              </TableHead>
+              <TableHead style={{ width: columnWidths.path, position: "relative" }}>
+                Path
+              </TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {files.map((file) => (
+              <TableRow
+                key={file.path}
+                className={`cursor-pointer ${
+                  selectedPath === file.path ? "bg-blue-50" : ""
+                }`}
+                onClick={() => onFileSelect(file)}
+              >
+                <TableCell style={{ width: columnWidths.icon }}>
+                  {file.isDirectory ? (
+                    <Folder className="w-5 h-5 text-blue-500" />
+                  ) : (
+                    <FileIcon className="w-5 h-5 text-gray-500" />
+                  )}
+                </TableCell>
+                <TableCell style={{ width: columnWidths.name }} className="font-medium">
+                  {file.name}
+                </TableCell>
+                <TableCell style={{ width: columnWidths.type }}>
+                  {file.isDirectory ? "Folder" : getFileExtension(file.name)}
+                </TableCell>
+                <TableCell style={{ width: columnWidths.size }}>
+                  {formatFileSize(file.size)}
+                </TableCell>
+                <TableCell style={{ width: columnWidths.lastModified }}>
+                  {formatDate(file.lastModified)}
+                </TableCell>
+                <TableCell style={{ width: columnWidths.summary }} className="text-gray-600 text-sm">
+                  {generateSummary(file)}
+                </TableCell>
+                <TableCell style={{ width: columnWidths.path }} className="text-gray-500 text-sm truncate">
+                  {file.path}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
     </div>
   );
 }

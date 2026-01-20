@@ -107,11 +107,17 @@ function App() {
         }),
       });
 
-      if (!summaryResponse.ok) {
-        throw new Error(`Summary API error: ${summaryResponse.status} ${summaryResponse.statusText}`);
+      let summaryData: SummarizeResponse = { summaries: [], duration: 0 };
+      
+      if (summaryResponse.ok) {
+        try {
+          summaryData = await summaryResponse.json();
+        } catch (err) {
+          console.warn("Failed to parse summary response, using fallback:", err);
+        }
+      } else {
+        console.warn(`Summary API returned ${summaryResponse.status}, continuing without summaries`);
       }
-
-      const summaryData: SummarizeResponse = await summaryResponse.json();
 
       // Create root node
       const rootNode: FileNode = {
@@ -120,6 +126,9 @@ function App() {
         isDirectory: true,
         children: treeData.map(convertApiNodeToFileNode),
       };
+
+      console.log("Root node created:", rootNode);
+      console.log("Summaries loaded:", summaryData.summaries.length);
 
       setRootDirectory(rootNode);
       setSummaries(summaryData.summaries);
@@ -212,6 +221,9 @@ function App() {
         file.name.toLowerCase().includes(searchQuery.toLowerCase())
       )
     : [];
+
+  console.log("Filtered files:", filteredFiles.length);
+  console.log("Root directory:", rootDirectory);
 
   const handleExportToExcel = () => {
     // Prepare data for Excel export
