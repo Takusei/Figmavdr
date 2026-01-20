@@ -23,14 +23,14 @@ type SortDirection = "asc" | "desc";
 
 export function FileList({ files, summaries, onFileSelect, selectedPath }: FileListProps) {
   const [columnWidths, setColumnWidths] = useState({
-    number: 60,
-    icon: 50,
-    name: 250,
-    type: 100,
-    size: 120,
-    lastModified: 180,
-    summary: 350,
-    path: 300,
+    number: 50,
+    icon: 40,
+    name: 180,
+    type: 80,
+    size: 90,
+    lastModified: 150,
+    summary: 250,
+    path: 200,
   });
 
   const [sortColumn, setSortColumn] = useState<SortColumn | null>(null);
@@ -298,32 +298,32 @@ export function FileList({ files, summaries, onFileSelect, selectedPath }: FileL
                 }`}
                 onClick={() => onFileSelect(file)}
               >
-                <TableCell style={{ width: columnWidths.number }}>
+                <TableCell style={{ width: columnWidths.number }} className="align-top">
                   {index + 1}
                 </TableCell>
-                <TableCell style={{ width: columnWidths.icon }}>
+                <TableCell style={{ width: columnWidths.icon }} className="align-top">
                   {file.isDirectory ? (
                     <Folder className="w-5 h-5 text-blue-500" />
                   ) : (
                     <FileIcon className="w-5 h-5 text-gray-500" />
                   )}
                 </TableCell>
-                <TableCell style={{ width: columnWidths.name }} className="font-medium">
+                <TableCell style={{ width: columnWidths.name }} className="font-medium break-words align-top">
                   {file.name}
                 </TableCell>
-                <TableCell style={{ width: columnWidths.type }}>
+                <TableCell style={{ width: columnWidths.type }} className="align-top">
                   {file.isDirectory ? "Folder" : getFileExtension(file.name)}
                 </TableCell>
-                <TableCell style={{ width: columnWidths.size }}>
+                <TableCell style={{ width: columnWidths.size }} className="align-top">
                   {formatFileSize(file.size)}
                 </TableCell>
-                <TableCell style={{ width: columnWidths.lastModified }}>
+                <TableCell style={{ width: columnWidths.lastModified }} className="break-words align-top">
                   {formatDate(file.lastModified)}
                 </TableCell>
-                <TableCell style={{ width: columnWidths.summary }} className="text-gray-600 text-sm">
+                <TableCell style={{ width: columnWidths.summary }} className="text-gray-600 text-sm break-words align-top">
                   {generateSummary(file)}
                 </TableCell>
-                <TableCell style={{ width: columnWidths.path }} className="text-gray-500 text-sm truncate">
+                <TableCell style={{ width: columnWidths.path }} className="text-gray-500 text-sm break-words align-top">
                   {file.path}
                 </TableCell>
               </TableRow>
