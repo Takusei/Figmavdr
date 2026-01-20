@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FolderOpen, Search, Download } from "lucide-react";
+import { FolderOpen, Search, Download, Loader2 } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
 import { TreeView, FileNode } from "@/app/components/TreeView";
@@ -13,215 +13,134 @@ import {
   ResizableHandle,
 } from "@/app/components/ui/resizable";
 
-export default function App() {
+interface ApiFileNode {
+  file_path: string;
+  file_name: string;
+  file_size: number;
+  last_modified_time: number;
+  file_type: string;
+  children: ApiFileNode[] | null;
+}
+
+function App() {
+  const [folderPath, setFolderPath] = useState("");
   const [rootDirectory, setRootDirectory] = useState<FileNode | null>(null);
-  const [allFiles, setAllFiles] = useState<FileNode[]>([]);
   const [selectedFile, setSelectedFile] = useState<FileNode | null>(null);
   const [showFileDetail, setShowFileDetail] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [usesFallback, setUsesFallback] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Build file tree from FileList (fallback method)
-  const buildFileTree = (files: File[]): FileNode => {
-    const root: FileNode = {
-      name: "Selected Directory",
-      path: "root",
-      isDirectory: true,
-      handle: null as any,
-      children: [],
-    };
-
-    const nodeMap = new Map<string, FileNode>();
-    nodeMap.set("root", root);
-
-    // Sort files by path to ensure parents are created before children
-    const sortedFiles = [...files].sort((a, b) => {
-      const aPath = a.webkitRelativePath || a.name;
-      const bPath = b.webkitRelativePath || b.name;
-      return aPath.localeCompare(bPath);
-    });
-
-    sortedFiles.forEach((file) => {
-      const relativePath = file.webkitRelativePath || file.name;
-      const parts = relativePath.split("/");
-      
-      let currentPath = "root";
-      
-      // Create all parent directories
-      for (let i = 0; i < parts.length - 1; i++) {
-        const parentPath = currentPath;
-        currentPath = currentPath === "root" ? parts[i] : `${currentPath}/${parts[i]}`;
-        
-        if (!nodeMap.has(currentPath)) {
-          const dirNode: FileNode = {
-            name: parts[i],
-            path: currentPath,
-            isDirectory: true,
-            handle: null as any,
-            children: [],
-          };
-          
-          nodeMap.set(currentPath, dirNode);
-          const parent = nodeMap.get(parentPath);
-          if (parent && parent.children) {
-            parent.children.push(dirNode);
-          }
-        }
-      }
-      
-      // Add the file
-      const fileName = parts[parts.length - 1];
-      const filePath = currentPath === "root" ? fileName : `${currentPath}/${fileName}`;
-      const fileNode: FileNode = {
-        name: fileName,
-        path: filePath,
-        isDirectory: false,
-        handle: file as any,
-        size: file.size,
-        lastModified: file.lastModified,
-      };
-      
-      nodeMap.set(filePath, fileNode);
-      const parent = nodeMap.get(currentPath);
-      if (parent && parent.children) {
-        parent.children.push(fileNode);
-      }
-    });
-
-    // Sort all children (directories first, then alphabetically)
-    const sortChildren = (node: FileNode) => {
-      if (node.children) {
-        node.children.sort((a, b) => {
-          if (a.isDirectory && !b.isDirectory) return -1;
-          if (!a.isDirectory && b.isDirectory) return 1;
-          return a.name.localeCompare(b.name);
-        });
-        node.children.forEach(sortChildren);
-      }
-    };
-    sortChildren(root);
-
-    return root;
-  };
-
-  const traverseDirectory = async (
-    dirHandle: FileSystemDirectoryHandle,
-    path: string = ""
-  ): Promise<FileNode> => {
-    const currentPath = path ? `${path}/${dirHandle.name}` : dirHandle.name;
-    const children: FileNode[] = [];
-
-    for await (const entry of dirHandle.values()) {
-      if (entry.kind === "directory") {
-        const subDir = await traverseDirectory(
-          entry as FileSystemDirectoryHandle,
-          currentPath
-        );
-        children.push(subDir);
-      } else {
-        const fileHandle = entry as FileSystemFileHandle;
-        const file = await fileHandle.getFile();
-        children.push({
-          name: entry.name,
-          path: `${currentPath}/${entry.name}`,
-          isDirectory: false,
-          handle: fileHandle,
-          size: file.size,
-          lastModified: file.lastModified,
-        });
-      }
-    }
-
+  // Convert API response to FileNode structure
+  const convertApiNodeToFileNode = (apiNode: ApiFileNode): FileNode => {
     return {
-      name: dirHandle.name,
-      path: currentPath,
-      isDirectory: true,
-      handle: dirHandle,
-      children: children.sort((a, b) => {
-        if (a.isDirectory && !b.isDirectory) return -1;
-        if (!a.isDirectory && b.isDirectory) return 1;
-        return a.name.localeCompare(b.name);
-      }),
+      name: apiNode.file_name,
+      path: apiNode.file_path,
+      isDirectory: apiNode.file_type === "directory",
+      size: apiNode.file_size,
+      lastModified: apiNode.last_modified_time * 1000, // Convert to milliseconds
+      children: apiNode.children
+        ? apiNode.children.map(convertApiNodeToFileNode)
+        : undefined,
     };
   };
 
-  const flattenFiles = (node: FileNode): FileNode[] => {
-    let files: FileNode[] = [node];
-    if (node.children) {
-      node.children.forEach((child) => {
-        files = files.concat(flattenFiles(child));
-      });
+  // Fetch folder structure from API
+  const handleLoadFolder = async () => {
+    if (!folderPath.trim()) {
+      setError("Please enter a folder path");
+      return;
     }
-    return files;
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/v1/tree", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          folderPath: folderPath.trim(),
+          regenerate: false,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data: ApiFileNode[] = await response.json();
+
+      if (!data || data.length === 0) {
+        throw new Error("No data returned from API");
+      }
+
+      // Create root node
+      const rootNode: FileNode = {
+        name: folderPath.split("/").pop() || folderPath,
+        path: folderPath,
+        isDirectory: true,
+        children: data.map(convertApiNodeToFileNode),
+      };
+
+      setRootDirectory(rootNode);
+      setError(null);
+    } catch (err) {
+      console.error("Error loading folder:", err);
+      setError(
+        err instanceof Error ? err.message : "Failed to load folder structure"
+      );
+      setRootDirectory(null);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleSelectDirectory = async () => {
+  const handleRegenerate = async () => {
+    if (!folderPath.trim() || !rootDirectory) {
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
     try {
-      // Check if we're in an iframe
-      const isInIframe = window.self !== window.top;
-      
-      // Try File System Access API first (if not in iframe and supported)
-      if (!isInIframe && "showDirectoryPicker" in window) {
-        setLoading(true);
-        const dirHandle = await (window as any).showDirectoryPicker();
-        const tree = await traverseDirectory(dirHandle);
-        setRootDirectory(tree);
-        
-        const files = flattenFiles(tree);
-        setAllFiles(files);
-        setUsesFallback(false);
-        setLoading(false);
-      } else {
-        // Fallback to traditional file input
-        const input = document.createElement("input");
-        input.type = "file";
-        input.webkitdirectory = true;
-        input.multiple = true;
-        
-        input.onchange = (e) => {
-          const files = Array.from((e.target as HTMLInputElement).files || []);
-          if (files.length > 0) {
-            setLoading(true);
-            const tree = buildFileTree(files);
-            setRootDirectory(tree);
-            
-            const allFilesList = flattenFiles(tree);
-            setAllFiles(allFilesList);
-            setUsesFallback(true);
-            setLoading(false);
-          }
-        };
-        
-        input.click();
+      const response = await fetch("/api/v1/tree", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          folderPath: folderPath.trim(),
+          regenerate: true,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status} ${response.statusText}`);
       }
-    } catch (error: any) {
-      console.error("Error accessing directory:", error);
-      
-      // If File System Access API fails, fall back to file input
-      if (error.name === "SecurityError" || error.name === "NotAllowedError") {
-        const input = document.createElement("input");
-        input.type = "file";
-        input.webkitdirectory = true;
-        input.multiple = true;
-        
-        input.onchange = (e) => {
-          const files = Array.from((e.target as HTMLInputElement).files || []);
-          if (files.length > 0) {
-            setLoading(true);
-            const tree = buildFileTree(files);
-            setRootDirectory(tree);
-            
-            const allFilesList = flattenFiles(tree);
-            setAllFiles(allFilesList);
-            setUsesFallback(true);
-            setLoading(false);
-          }
-        };
-        
-        input.click();
-      }
-      setLoading(false);
+
+      const data: ApiFileNode[] = await response.json();
+
+      // Create root node
+      const rootNode: FileNode = {
+        name: folderPath.split("/").pop() || folderPath,
+        path: folderPath,
+        isDirectory: true,
+        children: data.map(convertApiNodeToFileNode),
+      };
+
+      setRootDirectory(rootNode);
+      setError(null);
+    } catch (err) {
+      console.error("Error regenerating folder:", err);
+      setError(
+        err instanceof Error ? err.message : "Failed to regenerate folder structure"
+      );
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -230,9 +149,11 @@ export default function App() {
     setShowFileDetail(true);
   };
 
-  const filteredFiles = allFiles.filter((file) =>
-    file.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredFiles = rootDirectory
+    ? flattenFiles(rootDirectory).filter((file) =>
+        file.name.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : [];
 
   const handleExportToExcel = () => {
     // Prepare data for Excel export
@@ -263,10 +184,10 @@ export default function App() {
         if (file.isDirectory) {
           return `Folder containing ${file.children?.length || 0} items`;
         }
-        
+
         const ext = file.name.split(".").pop()?.toLowerCase();
         const sizeStr = formatFileSize(file.size);
-        
+
         if (["jpg", "jpeg", "png", "gif", "bmp", "webp"].includes(ext || "")) {
           return `Image file (${ext?.toUpperCase()}), ${sizeStr}`;
         } else if (["txt", "md"].includes(ext || "")) {
@@ -298,9 +219,9 @@ export default function App() {
 
     // Create worksheet
     const worksheet = XLSX.utils.json_to_sheet(exportData);
-    
+
     // Set column widths
-    worksheet['!cols'] = [
+    worksheet["!cols"] = [
       { wch: 30 }, // Name
       { wch: 10 }, // Type
       { wch: 12 }, // Size
@@ -314,11 +235,24 @@ export default function App() {
     XLSX.utils.book_append_sheet(workbook, worksheet, "Files");
 
     // Generate file name with timestamp
-    const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, -5);
+    const timestamp = new Date()
+      .toISOString()
+      .replace(/[:.]/g, "-")
+      .slice(0, -5);
     const fileName = `VDR_Export_${timestamp}.xlsx`;
 
     // Save file
     XLSX.writeFile(workbook, fileName);
+  };
+
+  const flattenFiles = (node: FileNode): FileNode[] => {
+    let files: FileNode[] = [node];
+    if (node.children) {
+      node.children.forEach((child) => {
+        files = files.concat(flattenFiles(child));
+      });
+    }
+    return files;
   };
 
   if (showFileDetail && selectedFile) {
@@ -336,10 +270,26 @@ export default function App() {
       <header className="bg-white border-b px-6 py-4">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold text-gray-900">Virtual Data Room</h1>
-          <Button onClick={handleSelectDirectory} disabled={loading}>
-            <FolderOpen className="w-4 h-4 mr-2" />
-            {loading ? "Loading..." : "Select Directory"}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={handleLoadFolder}
+              disabled={isLoading}
+              size="sm"
+              variant="outline"
+            >
+              <FolderOpen className="w-4 h-4 mr-2" />
+              {isLoading ? "Loading..." : "Load Folder"}
+            </Button>
+            <Button
+              onClick={handleRegenerate}
+              disabled={isLoading || !rootDirectory}
+              size="sm"
+              variant="outline"
+            >
+              <FolderOpen className="w-4 h-4 mr-2" />
+              {isLoading ? "Loading..." : "Regenerate"}
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -350,13 +300,30 @@ export default function App() {
             <FolderOpen className="w-24 h-24 mx-auto mb-6 text-gray-400" />
             <h2 className="text-2xl font-semibold mb-3">Welcome to Virtual Data Room</h2>
             <p className="text-gray-600 mb-6">
-              Select a directory from your local computer to browse and manage your files.
-              The File System Access API allows you to access and view your local files directly in the browser.
+              Enter a folder path to browse and manage your files.
+              The API allows you to access and view your local files directly in the browser.
             </p>
-            <Button onClick={handleSelectDirectory} size="lg">
-              <FolderOpen className="w-5 h-5 mr-2" />
-              Get Started
-            </Button>
+            <div className="flex items-center gap-2">
+              <Input
+                type="text"
+                placeholder="Enter folder path..."
+                value={folderPath}
+                onChange={(e) => setFolderPath(e.target.value)}
+                className="pl-10"
+              />
+              <Button
+                onClick={handleLoadFolder}
+                disabled={isLoading}
+                size="lg"
+                variant="outline"
+              >
+                <FolderOpen className="w-5 h-5 mr-2" />
+                Get Started
+              </Button>
+            </div>
+            {error && (
+              <p className="text-red-500 mt-2 text-sm">{error}</p>
+            )}
           </div>
         </div>
       ) : (
@@ -403,7 +370,7 @@ export default function App() {
                     <span className="text-sm text-gray-500">
                       {filteredFiles.length} items
                     </span>
-                    <Button 
+                    <Button
                       onClick={handleExportToExcel}
                       variant="outline"
                       disabled={filteredFiles.length === 0}
@@ -428,3 +395,5 @@ export default function App() {
     </div>
   );
 }
+
+export default App;
