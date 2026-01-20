@@ -1,5 +1,5 @@
 import { FileNode } from "./TreeView";
-import { File as FileIcon, Folder } from "lucide-react";
+import { File as FileIcon, Folder, ArrowUp, ArrowDown } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -18,8 +18,12 @@ interface FileListProps {
   selectedPath?: string;
 }
 
+type SortColumn = "name" | "type" | "size" | "lastModified" | "summary" | "path";
+type SortDirection = "asc" | "desc";
+
 export function FileList({ files, summaries, onFileSelect, selectedPath }: FileListProps) {
   const [columnWidths, setColumnWidths] = useState({
+    number: 60,
     icon: 50,
     name: 250,
     type: 100,
@@ -29,6 +33,8 @@ export function FileList({ files, summaries, onFileSelect, selectedPath }: FileL
     path: 300,
   });
 
+  const [sortColumn, setSortColumn] = useState<SortColumn | null>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [resizing, setResizing] = useState<string | null>(null);
   const startXRef = useRef(0);
   const startWidthRef = useRef(0);
@@ -124,6 +130,61 @@ export function FileList({ files, summaries, onFileSelect, selectedPath }: FileL
     }
   };
 
+  const handleSort = (column: SortColumn) => {
+    if (sortColumn === column) {
+      // Toggle direction if clicking the same column
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      // Set new column and default to ascending
+      setSortColumn(column);
+      setSortDirection("asc");
+    }
+  };
+
+  const sortedFiles = [...files].sort((a, b) => {
+    if (!sortColumn) return 0;
+
+    let aValue: any;
+    let bValue: any;
+
+    switch (sortColumn) {
+      case "name":
+        aValue = a.name.toLowerCase();
+        bValue = b.name.toLowerCase();
+        break;
+      case "type":
+        aValue = a.isDirectory ? "folder" : getFileExtension(a.name).toLowerCase();
+        bValue = b.isDirectory ? "folder" : getFileExtension(b.name).toLowerCase();
+        break;
+      case "size":
+        aValue = a.size || 0;
+        bValue = b.size || 0;
+        break;
+      case "lastModified":
+        aValue = a.lastModified || 0;
+        bValue = b.lastModified || 0;
+        break;
+      case "summary":
+        aValue = generateSummary(a).toLowerCase();
+        bValue = generateSummary(b).toLowerCase();
+        break;
+      case "path":
+        aValue = a.path.toLowerCase();
+        bValue = b.path.toLowerCase();
+        break;
+      default:
+        return 0;
+    }
+
+    if (typeof aValue === "string" && typeof bValue === "string") {
+      const comparison = aValue.localeCompare(bValue);
+      return sortDirection === "asc" ? comparison : -comparison;
+    } else if (typeof aValue === "number" && typeof bValue === "number") {
+      return sortDirection === "asc" ? aValue - bValue : bValue - aValue;
+    }
+    return 0;
+  });
+
   return (
     <div className="h-full overflow-auto">
       {files.length === 0 ? (
@@ -134,51 +195,102 @@ export function FileList({ files, summaries, onFileSelect, selectedPath }: FileL
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead style={{ width: columnWidths.number, position: "relative" }}>
+                #
+              </TableHead>
               <TableHead style={{ width: columnWidths.icon, position: "relative" }}>
                 {/* Icon column - no resize */}
               </TableHead>
-              <TableHead style={{ width: columnWidths.name, position: "relative" }}>
-                Name
+              <TableHead 
+                style={{ width: columnWidths.name, position: "relative", cursor: "pointer" }}
+                onClick={() => handleSort("name")}
+              >
+                <div className="flex items-center gap-1">
+                  Name
+                  {sortColumn === "name" && (
+                    sortDirection === "asc" ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
+                  )}
+                </div>
                 <div
                   className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-400 bg-gray-300"
                   onMouseDown={(e) => handleMouseDown("name", e)}
                 />
               </TableHead>
-              <TableHead style={{ width: columnWidths.type, position: "relative" }}>
-                Type
+              <TableHead 
+                style={{ width: columnWidths.type, position: "relative", cursor: "pointer" }}
+                onClick={() => handleSort("type")}
+              >
+                <div className="flex items-center gap-1">
+                  Type
+                  {sortColumn === "type" && (
+                    sortDirection === "asc" ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
+                  )}
+                </div>
                 <div
                   className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-400 bg-gray-300"
                   onMouseDown={(e) => handleMouseDown("type", e)}
                 />
               </TableHead>
-              <TableHead style={{ width: columnWidths.size, position: "relative" }}>
-                Size
+              <TableHead 
+                style={{ width: columnWidths.size, position: "relative", cursor: "pointer" }}
+                onClick={() => handleSort("size")}
+              >
+                <div className="flex items-center gap-1">
+                  Size
+                  {sortColumn === "size" && (
+                    sortDirection === "asc" ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
+                  )}
+                </div>
                 <div
                   className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-400 bg-gray-300"
                   onMouseDown={(e) => handleMouseDown("size", e)}
                 />
               </TableHead>
-              <TableHead style={{ width: columnWidths.lastModified, position: "relative" }}>
-                Last Modified
+              <TableHead 
+                style={{ width: columnWidths.lastModified, position: "relative", cursor: "pointer" }}
+                onClick={() => handleSort("lastModified")}
+              >
+                <div className="flex items-center gap-1">
+                  Last Modified
+                  {sortColumn === "lastModified" && (
+                    sortDirection === "asc" ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
+                  )}
+                </div>
                 <div
                   className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-400 bg-gray-300"
                   onMouseDown={(e) => handleMouseDown("lastModified", e)}
                 />
               </TableHead>
-              <TableHead style={{ width: columnWidths.summary, position: "relative" }}>
-                Summary
+              <TableHead 
+                style={{ width: columnWidths.summary, position: "relative", cursor: "pointer" }}
+                onClick={() => handleSort("summary")}
+              >
+                <div className="flex items-center gap-1">
+                  Summary
+                  {sortColumn === "summary" && (
+                    sortDirection === "asc" ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
+                  )}
+                </div>
                 <div
                   className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-400 bg-gray-300"
                   onMouseDown={(e) => handleMouseDown("summary", e)}
                 />
               </TableHead>
-              <TableHead style={{ width: columnWidths.path, position: "relative" }}>
-                Path
+              <TableHead 
+                style={{ width: columnWidths.path, position: "relative", cursor: "pointer" }}
+                onClick={() => handleSort("path")}
+              >
+                <div className="flex items-center gap-1">
+                  Path
+                  {sortColumn === "path" && (
+                    sortDirection === "asc" ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
+                  )}
+                </div>
               </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {files.map((file) => (
+            {sortedFiles.map((file, index) => (
               <TableRow
                 key={file.path}
                 className={`cursor-pointer ${
@@ -186,6 +298,9 @@ export function FileList({ files, summaries, onFileSelect, selectedPath }: FileL
                 }`}
                 onClick={() => onFileSelect(file)}
               >
+                <TableCell style={{ width: columnWidths.number }}>
+                  {index + 1}
+                </TableCell>
                 <TableCell style={{ width: columnWidths.icon }}>
                   {file.isDirectory ? (
                     <Folder className="w-5 h-5 text-blue-500" />
