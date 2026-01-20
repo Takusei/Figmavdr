@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FolderOpen, Search, Download, Loader2 } from "lucide-react";
+import { FolderOpen, Search, Download, Loader2, AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
 import { TreeView, FileNode } from "@/app/components/TreeView";
@@ -47,6 +47,37 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [summaries, setSummaries] = useState<FileSummary[]>([]);
   const [apiBaseUrl, setApiBaseUrl] = useState("http://localhost:8000");
+  const [hasChanges, setHasChanges] = useState(false);
+  const [isCheckingDiff, setIsCheckingDiff] = useState(false);
+
+  // Check if folder structure has changed
+  const checkForChanges = async () => {
+    if (!folderPath.trim()) {
+      return;
+    }
+
+    setIsCheckingDiff(true);
+
+    try {
+      const diffResponse = await fetch(`${apiBaseUrl}/api/v1/diff?folderPath=${encodeURIComponent(folderPath.trim())}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (diffResponse.ok) {
+        const diffData = await diffResponse.json();
+        setHasChanges(diffData.changed === true);
+      } else {
+        console.warn(`Diff API returned ${diffResponse.status}, skipping check`);
+      }
+    } catch (err) {
+      console.error("Error checking for changes:", err);
+    } finally {
+      setIsCheckingDiff(false);
+    }
+  };
 
   // Convert API response to FileNode structure
   const convertApiNodeToFileNode = (apiNode: ApiFileNode): FileNode => {
@@ -198,6 +229,7 @@ function App() {
       setRootDirectory(rootNode);
       setSummaries(summaryData.summaries);
       setError(null);
+      setHasChanges(false); // Reset changes flag after successful regeneration
     } catch (err) {
       console.error("Error regenerating folder:", err);
       setError(
@@ -440,6 +472,29 @@ function App() {
             {/* Right Content - File List */}
             <ResizablePanel defaultSize={75}>
               <div className="h-full flex flex-col bg-white">
+                {/* Change Detection Warning Banner */}
+                {hasChanges && (
+                  <div className="bg-orange-50 border-b border-orange-200 px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <AlertCircle className="w-5 h-5 text-orange-600 flex-shrink-0" />
+                      <div className="flex-1">
+                        <h3 className="text-sm font-semibold text-orange-900">Folder Structure Changed</h3>
+                        <p className="text-xs text-orange-700 mt-0.5">
+                          The folder structure has been modified. Click "Regenerate" to update the data.
+                        </p>
+                      </div>
+                      <Button
+                        onClick={handleRegenerate}
+                        disabled={isLoading}
+                        size="sm"
+                        className="bg-orange-600 hover:bg-orange-700 text-white"
+                      >
+                        <RefreshCw className="w-3 h-3 mr-1" />
+                        Regenerate
+                      </Button>
+                    </div>
+                  </div>
+                )}
                 <div className="p-4 border-b">
                   <div className="flex items-center gap-4">
                     <h2 className="font-semibold text-gray-700">All Files</h2>
@@ -456,6 +511,24 @@ function App() {
                     <span className="text-sm text-gray-500">
                       {filteredFiles.length} items
                     </span>
+                    <Button
+                      onClick={checkForChanges}
+                      variant="outline"
+                      disabled={isCheckingDiff}
+                      size="sm"
+                    >
+                      {isCheckingDiff ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Checking...
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCw className="w-4 h-4 mr-2" />
+                          Check Changes
+                        </>
+                      )}
+                    </Button>
                     <Button
                       onClick={handleExportToExcel}
                       variant="outline"
