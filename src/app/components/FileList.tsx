@@ -192,144 +192,146 @@ export function FileList({ files, summaries, onFileSelect, selectedPath }: FileL
           <p>No files to display</p>
         </div>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead style={{ width: columnWidths.number, position: "relative" }}>
-                #
-              </TableHead>
-              <TableHead style={{ width: columnWidths.icon, position: "relative" }}>
-                {/* Icon column - no resize */}
-              </TableHead>
-              <TableHead 
-                style={{ width: columnWidths.name, position: "relative", cursor: "pointer" }}
-                onClick={() => handleSort("name")}
-              >
-                <div className="flex items-center gap-1">
-                  Name
-                  {sortColumn === "name" && (
-                    sortDirection === "asc" ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
-                  )}
-                </div>
-                <div
-                  className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-400 bg-gray-300"
-                  onMouseDown={(e) => handleMouseDown("name", e)}
-                />
-              </TableHead>
-              <TableHead 
-                style={{ width: columnWidths.type, position: "relative", cursor: "pointer" }}
-                onClick={() => handleSort("type")}
-              >
-                <div className="flex items-center gap-1">
-                  Type
-                  {sortColumn === "type" && (
-                    sortDirection === "asc" ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
-                  )}
-                </div>
-                <div
-                  className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-400 bg-gray-300"
-                  onMouseDown={(e) => handleMouseDown("type", e)}
-                />
-              </TableHead>
-              <TableHead 
-                style={{ width: columnWidths.size, position: "relative", cursor: "pointer" }}
-                onClick={() => handleSort("size")}
-              >
-                <div className="flex items-center gap-1">
-                  Size
-                  {sortColumn === "size" && (
-                    sortDirection === "asc" ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
-                  )}
-                </div>
-                <div
-                  className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-400 bg-gray-300"
-                  onMouseDown={(e) => handleMouseDown("size", e)}
-                />
-              </TableHead>
-              <TableHead 
-                style={{ width: columnWidths.lastModified, position: "relative", cursor: "pointer" }}
-                onClick={() => handleSort("lastModified")}
-              >
-                <div className="flex items-center gap-1">
-                  Last Modified
-                  {sortColumn === "lastModified" && (
-                    sortDirection === "asc" ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
-                  )}
-                </div>
-                <div
-                  className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-400 bg-gray-300"
-                  onMouseDown={(e) => handleMouseDown("lastModified", e)}
-                />
-              </TableHead>
-              <TableHead 
-                style={{ width: columnWidths.summary, position: "relative", cursor: "pointer" }}
-                onClick={() => handleSort("summary")}
-              >
-                <div className="flex items-center gap-1">
-                  Summary
-                  {sortColumn === "summary" && (
-                    sortDirection === "asc" ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
-                  )}
-                </div>
-                <div
-                  className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-400 bg-gray-300"
-                  onMouseDown={(e) => handleMouseDown("summary", e)}
-                />
-              </TableHead>
-              <TableHead 
-                style={{ width: columnWidths.path, position: "relative", cursor: "pointer" }}
-                onClick={() => handleSort("path")}
-              >
-                <div className="flex items-center gap-1">
-                  Path
-                  {sortColumn === "path" && (
-                    sortDirection === "asc" ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
-                  )}
-                </div>
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sortedFiles.map((file, index) => (
-              <TableRow
-                key={file.path}
-                className={`cursor-pointer ${
-                  selectedPath === file.path ? "bg-blue-50" : ""
-                }`}
-                onClick={() => onFileSelect(file)}
-              >
-                <TableCell style={{ width: columnWidths.number }} className="align-top">
-                  {index + 1}
-                </TableCell>
-                <TableCell style={{ width: columnWidths.icon }} className="align-top">
-                  {file.isDirectory ? (
-                    <Folder className="w-5 h-5 text-blue-500" />
-                  ) : (
-                    <FileIcon className="w-5 h-5 text-gray-500" />
-                  )}
-                </TableCell>
-                <TableCell style={{ width: columnWidths.name }} className="font-medium break-words align-top">
-                  {file.name}
-                </TableCell>
-                <TableCell style={{ width: columnWidths.type }} className="align-top">
-                  {file.isDirectory ? "Folder" : getFileExtension(file.name)}
-                </TableCell>
-                <TableCell style={{ width: columnWidths.size }} className="align-top">
-                  {formatFileSize(file.size)}
-                </TableCell>
-                <TableCell style={{ width: columnWidths.lastModified }} className="break-words align-top">
-                  {formatDate(file.lastModified)}
-                </TableCell>
-                <TableCell style={{ width: columnWidths.summary }} className="text-gray-600 text-sm break-words align-top">
-                  {generateSummary(file)}
-                </TableCell>
-                <TableCell style={{ width: columnWidths.path }} className="text-gray-500 text-sm break-words align-top">
-                  {file.path}
-                </TableCell>
+        <div className="w-full overflow-visible">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead style={{ width: columnWidths.number, position: "relative" }}>
+                  #
+                </TableHead>
+                <TableHead style={{ width: columnWidths.icon, position: "relative" }}>
+                  {/* Icon column - no resize */}
+                </TableHead>
+                <TableHead 
+                  style={{ width: columnWidths.name, position: "relative", cursor: "pointer" }}
+                  onClick={() => handleSort("name")}
+                >
+                  <div className="flex items-center gap-1">
+                    Name
+                    {sortColumn === "name" && (
+                      sortDirection === "asc" ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
+                    )}
+                  </div>
+                  <div
+                    className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-400 bg-gray-300"
+                    onMouseDown={(e) => handleMouseDown("name", e)}
+                  />
+                </TableHead>
+                <TableHead 
+                  style={{ width: columnWidths.type, position: "relative", cursor: "pointer" }}
+                  onClick={() => handleSort("type")}
+                >
+                  <div className="flex items-center gap-1">
+                    Type
+                    {sortColumn === "type" && (
+                      sortDirection === "asc" ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
+                    )}
+                  </div>
+                  <div
+                    className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-400 bg-gray-300"
+                    onMouseDown={(e) => handleMouseDown("type", e)}
+                  />
+                </TableHead>
+                <TableHead 
+                  style={{ width: columnWidths.size, position: "relative", cursor: "pointer" }}
+                  onClick={() => handleSort("size")}
+                >
+                  <div className="flex items-center gap-1">
+                    Size
+                    {sortColumn === "size" && (
+                      sortDirection === "asc" ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
+                    )}
+                  </div>
+                  <div
+                    className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-400 bg-gray-300"
+                    onMouseDown={(e) => handleMouseDown("size", e)}
+                  />
+                </TableHead>
+                <TableHead 
+                  style={{ width: columnWidths.lastModified, position: "relative", cursor: "pointer" }}
+                  onClick={() => handleSort("lastModified")}
+                >
+                  <div className="flex items-center gap-1">
+                    Last Modified
+                    {sortColumn === "lastModified" && (
+                      sortDirection === "asc" ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
+                    )}
+                  </div>
+                  <div
+                    className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-400 bg-gray-300"
+                    onMouseDown={(e) => handleMouseDown("lastModified", e)}
+                  />
+                </TableHead>
+                <TableHead 
+                  style={{ width: columnWidths.summary, position: "relative", cursor: "pointer" }}
+                  onClick={() => handleSort("summary")}
+                >
+                  <div className="flex items-center gap-1">
+                    Summary
+                    {sortColumn === "summary" && (
+                      sortDirection === "asc" ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
+                    )}
+                  </div>
+                  <div
+                    className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-400 bg-gray-300"
+                    onMouseDown={(e) => handleMouseDown("summary", e)}
+                  />
+                </TableHead>
+                <TableHead 
+                  style={{ width: columnWidths.path, position: "relative", cursor: "pointer" }}
+                  onClick={() => handleSort("path")}
+                >
+                  <div className="flex items-center gap-1">
+                    Path
+                    {sortColumn === "path" && (
+                      sortDirection === "asc" ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
+                    )}
+                  </div>
+                </TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {sortedFiles.map((file, index) => (
+                <TableRow
+                  key={file.path}
+                  className={`cursor-pointer ${
+                    selectedPath === file.path ? "bg-blue-50" : ""
+                  }`}
+                  onClick={() => onFileSelect(file)}
+                >
+                  <TableCell style={{ width: columnWidths.number }} className="align-top">
+                    {index + 1}
+                  </TableCell>
+                  <TableCell style={{ width: columnWidths.icon }} className="align-top">
+                    {file.isDirectory ? (
+                      <Folder className="w-5 h-5 text-blue-500" />
+                    ) : (
+                      <FileIcon className="w-5 h-5 text-gray-500" />
+                    )}
+                  </TableCell>
+                  <TableCell style={{ width: columnWidths.name }} className="font-medium !whitespace-normal break-words align-top">
+                    {file.name}
+                  </TableCell>
+                  <TableCell style={{ width: columnWidths.type }} className="align-top">
+                    {file.isDirectory ? "Folder" : getFileExtension(file.name)}
+                  </TableCell>
+                  <TableCell style={{ width: columnWidths.size }} className="align-top">
+                    {formatFileSize(file.size)}
+                  </TableCell>
+                  <TableCell style={{ width: columnWidths.lastModified }} className="!whitespace-normal break-words align-top">
+                    {formatDate(file.lastModified)}
+                  </TableCell>
+                  <TableCell style={{ width: columnWidths.summary }} className="text-gray-600 text-sm !whitespace-normal break-words align-top">
+                    {generateSummary(file)}
+                  </TableCell>
+                  <TableCell style={{ width: columnWidths.path }} className="text-gray-500 text-sm !whitespace-normal break-words align-top">
+                    {file.path}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       )}
     </div>
   );
