@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { FolderOpen, Search, Download, Loader2, AlertCircle, RefreshCw } from "lucide-react";
+import { useState, useEffect } from "react";
+import { FolderOpen, Search, Download, Loader2, AlertCircle, RefreshCw, CheckCircle } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
 import { TreeView, FileNode } from "@/app/components/TreeView";
@@ -49,6 +49,14 @@ function App() {
   const [apiBaseUrl, setApiBaseUrl] = useState("http://localhost:8000");
   const [hasChanges, setHasChanges] = useState(false);
   const [isCheckingDiff, setIsCheckingDiff] = useState(false);
+  const [diffChecked, setDiffChecked] = useState(false); // Track if diff has been checked
+
+  // Auto-check for changes when folder is loaded
+  useEffect(() => {
+    if (rootDirectory && !isLoading) {
+      checkForChanges();
+    }
+  }, [rootDirectory]);
 
   // Check if folder structure has changed
   const checkForChanges = async () => {
@@ -72,6 +80,7 @@ function App() {
       if (diffResponse.ok) {
         const diffData = await diffResponse.json();
         setHasChanges(diffData.changed === true);
+        setDiffChecked(true); // Mark diff as checked
       } else {
         console.warn(`Diff API returned ${diffResponse.status}, skipping check`);
       }
@@ -233,6 +242,7 @@ function App() {
       setSummaries(summaryData.summaries);
       setError(null);
       setHasChanges(false); // Reset changes flag after successful regeneration
+      setDiffChecked(false); // Reset diff checked flag
     } catch (err) {
       console.error("Error regenerating folder:", err);
       setError(
@@ -475,8 +485,8 @@ function App() {
             {/* Right Content - File List */}
             <ResizablePanel defaultSize={75}>
               <div className="h-full flex flex-col bg-white">
-                {/* Change Detection Warning Banner */}
-                {hasChanges && (
+                {/* Change Detection Status Banner */}
+                {diffChecked && hasChanges && (
                   <div className="bg-orange-50 border-b border-orange-200 px-4 py-3">
                     <div className="flex items-center gap-3">
                       <AlertCircle className="w-5 h-5 text-orange-600 flex-shrink-0" />
@@ -495,6 +505,19 @@ function App() {
                         <RefreshCw className="w-3 h-3 mr-1" />
                         Regenerate
                       </Button>
+                    </div>
+                  </div>
+                )}
+                {diffChecked && !hasChanges && (
+                  <div className="bg-green-50 border-b border-green-200 px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+                      <div className="flex-1">
+                        <h3 className="text-sm font-semibold text-green-900">Folder Structure Up to Date</h3>
+                        <p className="text-xs text-green-700 mt-0.5">
+                          No changes detected. The data is synchronized with the current folder structure.
+                        </p>
+                      </div>
                     </div>
                   </div>
                 )}
