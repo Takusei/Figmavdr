@@ -19,8 +19,6 @@ interface FileListProps {
 }
 
 export function FileList({ files, summaries, onFileSelect, selectedPath }: FileListProps) {
-  console.log("FileList rendered with:", files.length, "files and", summaries.length, "summaries");
-  
   const [columnWidths, setColumnWidths] = useState({
     icon: 50,
     name: 250,

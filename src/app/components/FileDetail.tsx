@@ -3,13 +3,15 @@ import { X, FileText, Image as ImageIcon, FileCode, File as FileIcon } from "luc
 import { Button } from "@/app/components/ui/button";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from "@/app/components/ui/breadcrumb";
 import { useState, useEffect } from "react";
+import type { FileSummary } from "@/app/App";
 
 interface FileDetailProps {
   file: FileNode;
+  summaries: FileSummary[];
   onClose: () => void;
 }
 
-export function FileDetail({ file, onClose }: FileDetailProps) {
+export function FileDetail({ file, summaries, onClose }: FileDetailProps) {
   const [fileContent, setFileContent] = useState<string | null>(null);
   const [previewType, setPreviewType] = useState<"text" | "image" | "unsupported">("unsupported");
 
@@ -73,6 +75,13 @@ export function FileDetail({ file, onClose }: FileDetailProps) {
   };
 
   const generateSummary = () => {
+    // First check if we have a summary from the API
+    const apiSummary = summaries.find(s => s.filePath === file.path);
+    if (apiSummary && apiSummary.summary) {
+      return apiSummary.summary;
+    }
+
+    // Fallback to generated summary
     if (file.isDirectory) {
       return `This is a directory containing ${file.children?.length || 0} items.`;
     }

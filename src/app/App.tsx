@@ -127,9 +127,6 @@ function App() {
         children: treeData.map(convertApiNodeToFileNode),
       };
 
-      console.log("Root node created:", rootNode);
-      console.log("Summaries loaded:", summaryData.summaries.length);
-
       setRootDirectory(rootNode);
       setSummaries(summaryData.summaries);
       setError(null);
@@ -232,9 +229,6 @@ function App() {
       )
     : [];
 
-  console.log("Filtered files:", filteredFiles.length);
-  console.log("Root directory:", rootDirectory);
-
   const handleExportToExcel = () => {
     // Prepare data for Excel export
     const exportData = filteredFiles.map((file) => {
@@ -329,6 +323,7 @@ function App() {
     return (
       <FileDetail
         file={selectedFile}
+        summaries={summaries}
         onClose={() => setShowFileDetail(false)}
       />
     );
