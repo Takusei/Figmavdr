@@ -224,9 +224,13 @@ function App() {
   };
 
   const filteredFiles = rootDirectory
-    ? flattenFiles(rootDirectory).filter((file) =>
-        file.name.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+    ? flattenFiles(rootDirectory)
+        .filter((file) => {
+          // Only include files that have summaries from the API
+          const hasSummary = summaries.some(s => s.filePath === file.path);
+          const matchesSearch = file.name.toLowerCase().includes(searchQuery.toLowerCase());
+          return hasSummary && matchesSearch;
+        })
     : [];
 
   const handleExportToExcel = () => {
