@@ -59,11 +59,14 @@ function App() {
     setIsCheckingDiff(true);
 
     try {
-      const diffResponse = await fetch(`${apiBaseUrl}/api/v1/diff?folderPath=${encodeURIComponent(folderPath.trim())}`, {
-        method: "GET",
+      const diffResponse = await fetch(`${apiBaseUrl}/api/v1/diff`, {
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
+        body: JSON.stringify({
+          folderPath: folderPath.trim(),
+        }),
       });
 
       if (diffResponse.ok) {
