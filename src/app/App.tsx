@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { FolderOpen, Search, Download, Loader2, AlertCircle, RefreshCw, CheckCircle } from "lucide-react";
+import { FolderOpen, Search, Download, Loader2, AlertCircle, RefreshCw, CheckCircle, RefreshCcw } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
 import { TreeView, FileNode } from "@/app/components/TreeView";
@@ -212,7 +212,7 @@ function App() {
 
       const treeData: ApiFileNode[] = await treeResponse.json();
 
-      // Fetch summaries with regenerate flag
+      // Fetch summaries with regenerate and sync flags
       const summaryResponse = await fetch(`${apiBaseUrl}/api/v1/summarize/folder`, {
         method: "POST",
         headers: {
@@ -221,6 +221,7 @@ function App() {
         body: JSON.stringify({
           folderPath: folderPath.trim(),
           regenerate: true,
+          sync: true,
         }),
       });
 
@@ -251,6 +252,77 @@ function App() {
     } finally {
       setIsLoading(false);
       // Re-check for changes after regeneration
+      checkForChanges();
+    }
+  };
+
+  const handleSync = async () => {
+    if (!folderPath.trim() || !rootDirectory) {
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Fetch tree structure
+      const treeResponse = await fetch(`${apiBaseUrl}/api/v1/tree`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          folderPath: folderPath.trim(),
+          regenerate: false,
+        }),
+      });
+
+      if (!treeResponse.ok) {
+        throw new Error(`Tree API error: ${treeResponse.status} ${treeResponse.statusText}`);
+      }
+
+      const treeData: ApiFileNode[] = await treeResponse.json();
+
+      // Fetch summaries with sync flag only
+      const summaryResponse = await fetch(`${apiBaseUrl}/api/v1/summarize/folder`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          folderPath: folderPath.trim(),
+          regenerate: false,
+          sync: true,
+        }),
+      });
+
+      if (!summaryResponse.ok) {
+        throw new Error(`Summary API error: ${summaryResponse.status} ${summaryResponse.statusText}`);
+      }
+
+      const summaryData: SummarizeResponse = await summaryResponse.json();
+
+      // Create root node
+      const rootNode: FileNode = {
+        name: folderPath.split("/").pop() || folderPath,
+        path: folderPath,
+        isDirectory: true,
+        children: treeData.map(convertApiNodeToFileNode),
+      };
+
+      setRootDirectory(rootNode);
+      setSummaries(summaryData.summaries);
+      setError(null);
+      setHasChanges(false); // Reset changes flag after successful sync
+      setDiffChecked(false); // Reset diff checked flag
+    } catch (err) {
+      console.error("Error syncing folder:", err);
+      setError(
+        err instanceof Error ? err.message : "Failed to sync folder structure"
+      );
+    } finally {
+      setIsLoading(false);
+      // Re-check for changes after sync
       checkForChanges();
     }
   };
@@ -488,17 +560,17 @@ function App() {
                       <div className="flex-1">
                         <h3 className="text-sm font-semibold text-orange-900">Folder Structure Changed</h3>
                         <p className="text-xs text-orange-700 mt-0.5">
-                          The folder structure has been modified. Click "Regenerate" to update the data.
+                          The folder structure has been modified. Click "Sync" to synchronize the data.
                         </p>
                       </div>
                       <Button
-                        onClick={handleRegenerate}
+                        onClick={handleSync}
                         disabled={isLoading}
                         size="sm"
                         className="bg-orange-600 hover:bg-orange-700 text-white"
                       >
-                        <RefreshCw className="w-3 h-3 mr-1" />
-                        Regenerate
+                        <RefreshCcw className="w-3 h-3 mr-1" />
+                        Sync
                       </Button>
                     </div>
                   </div>
