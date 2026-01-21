@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { FolderOpen, Search, Download, Loader2, AlertCircle, RefreshCw, CheckCircle, RefreshCcw } from "lucide-react";
+import { FolderOpen, Search, Download, Loader2, AlertCircle, RefreshCw, CheckCircle, RefreshCcw, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
 import { TreeView, FileNode } from "@/app/components/TreeView";
@@ -50,6 +50,7 @@ function App() {
   const [hasChanges, setHasChanges] = useState(false);
   const [isCheckingDiff, setIsCheckingDiff] = useState(false);
   const [diffChecked, setDiffChecked] = useState(false); // Track if diff has been checked
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   // Auto-check for changes when folder is loaded
   useEffect(() => {
@@ -526,123 +527,143 @@ function App() {
         </div>
       ) : (
         /* Main Content */
-        <div className="flex-1 overflow-hidden">
-          <ResizablePanelGroup direction="horizontal">
-            {/* Left Sidebar - Tree View */}
-            <ResizablePanel defaultSize={25} minSize={15} maxSize={50}>
-              <div className="h-full bg-white flex flex-col overflow-hidden">
-                <div className="p-4 border-b flex-shrink-0">
+        <div className="flex-1 overflow-hidden relative flex">
+          {/* Left Sidebar - Tree View (Collapsible Drawer) */}
+          <div
+            className={`bg-white border-r flex flex-col overflow-hidden transition-all duration-300 ease-in-out ${
+              isSidebarCollapsed ? "w-0" : "w-80"
+            }`}
+          >
+            <div className="p-4 border-b flex-shrink-0">
+              <div className="flex items-center justify-between">
+                <div className="flex-1 min-w-0">
                   <h2 className="font-semibold text-gray-700 mb-2">Folder Structure</h2>
                   <p className="text-sm text-gray-500 truncate">{rootDirectory.path}</p>
                 </div>
-                <div className="flex-1 overflow-auto">
-                  <div className="p-2">
-                    <TreeView
-                      nodes={[rootDirectory]}
-                      onFileSelect={handleFileSelect}
-                      selectedPath={selectedFile?.path}
-                    />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsSidebarCollapsed(true)}
+                  className="ml-2 flex-shrink-0"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+            <div className="flex-1 overflow-auto">
+              <div className="p-2">
+                <TreeView
+                  nodes={[rootDirectory]}
+                  onFileSelect={handleFileSelect}
+                  selectedPath={selectedFile?.path}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Toggle Button (when collapsed) */}
+          {isSidebarCollapsed && (
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setIsSidebarCollapsed(false)}
+              className="absolute left-2 top-4 z-10 shadow-md"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          )}
+
+          {/* Right Content - File List */}
+          <div className="flex-1 flex flex-col bg-white overflow-hidden">
+            {/* Change Detection Status Banner */}
+            {diffChecked && hasChanges && (
+              <div className="bg-orange-50 border-b border-orange-200 px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <AlertCircle className="w-5 h-5 text-orange-600 flex-shrink-0" />
+                  <div className="flex-1">
+                    <h3 className="text-sm font-semibold text-orange-900">Folder Structure Changed</h3>
+                    <p className="text-xs text-orange-700 mt-0.5">
+                      The folder structure has been modified. Click "Sync" to synchronize the data.
+                    </p>
+                  </div>
+                  <Button
+                    onClick={handleSync}
+                    disabled={isLoading}
+                    size="sm"
+                    className="bg-orange-600 hover:bg-orange-700 text-white"
+                  >
+                    <RefreshCcw className="w-3 h-3 mr-1" />
+                    Sync
+                  </Button>
+                </div>
+              </div>
+            )}
+            {diffChecked && !hasChanges && (
+              <div className="bg-green-50 border-b border-green-200 px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+                  <div className="flex-1">
+                    <h3 className="text-sm font-semibold text-green-900">Folder Structure Up to Date</h3>
+                    <p className="text-xs text-green-700 mt-0.5">
+                      No changes detected. The data is synchronized with the current folder structure.
+                    </p>
                   </div>
                 </div>
               </div>
-            </ResizablePanel>
-
-            <ResizableHandle withHandle />
-
-            {/* Right Content - File List */}
-            <ResizablePanel defaultSize={75}>
-              <div className="h-full flex flex-col bg-white">
-                {/* Change Detection Status Banner */}
-                {diffChecked && hasChanges && (
-                  <div className="bg-orange-50 border-b border-orange-200 px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <AlertCircle className="w-5 h-5 text-orange-600 flex-shrink-0" />
-                      <div className="flex-1">
-                        <h3 className="text-sm font-semibold text-orange-900">Folder Structure Changed</h3>
-                        <p className="text-xs text-orange-700 mt-0.5">
-                          The folder structure has been modified. Click "Sync" to synchronize the data.
-                        </p>
-                      </div>
-                      <Button
-                        onClick={handleSync}
-                        disabled={isLoading}
-                        size="sm"
-                        className="bg-orange-600 hover:bg-orange-700 text-white"
-                      >
-                        <RefreshCcw className="w-3 h-3 mr-1" />
-                        Sync
-                      </Button>
-                    </div>
-                  </div>
-                )}
-                {diffChecked && !hasChanges && (
-                  <div className="bg-green-50 border-b border-green-200 px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
-                      <div className="flex-1">
-                        <h3 className="text-sm font-semibold text-green-900">Folder Structure Up to Date</h3>
-                        <p className="text-xs text-green-700 mt-0.5">
-                          No changes detected. The data is synchronized with the current folder structure.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                <div className="p-4 border-b">
-                  <div className="flex items-center gap-4">
-                    <h2 className="font-semibold text-gray-700">All Files</h2>
-                    <div className="flex-1 max-w-md relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                      <Input
-                        type="text"
-                        placeholder="Search files..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
-                    <span className="text-sm text-gray-500">
-                      {filteredFiles.length} items
-                    </span>
-                    <Button
-                      onClick={checkForChanges}
-                      variant="outline"
-                      disabled={isCheckingDiff}
-                      size="sm"
-                    >
-                      {isCheckingDiff ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Checking...
-                        </>
-                      ) : (
-                        <>
-                          <RefreshCw className="w-4 h-4 mr-2" />
-                          Check Changes
-                        </>
-                      )}
-                    </Button>
-                    <Button
-                      onClick={handleExportToExcel}
-                      variant="outline"
-                      disabled={filteredFiles.length === 0}
-                    >
-                      <Download className="w-4 h-4 mr-2" />
-                      Export to Excel
-                    </Button>
-                  </div>
-                </div>
-                <div className="flex-1 overflow-hidden">
-                  <FileList
-                    files={filteredFiles}
-                    summaries={summaries}
-                    onFileSelect={handleFileSelect}
-                    selectedPath={selectedFile?.path}
+            )}
+            <div className="p-4 border-b">
+              <div className="flex items-center gap-4">
+                <h2 className="font-semibold text-gray-700">All Files</h2>
+                <div className="flex-1 max-w-md relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Input
+                    type="text"
+                    placeholder="Search files..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10"
                   />
                 </div>
+                <span className="text-sm text-gray-500">
+                  {filteredFiles.length} items
+                </span>
+                <Button
+                  onClick={checkForChanges}
+                  variant="outline"
+                  disabled={isCheckingDiff}
+                  size="sm"
+                >
+                  {isCheckingDiff ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Checking...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Check Changes
+                    </>
+                  )}
+                </Button>
+                <Button
+                  onClick={handleExportToExcel}
+                  variant="outline"
+                  disabled={filteredFiles.length === 0}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Export to Excel
+                </Button>
               </div>
-            </ResizablePanel>
-          </ResizablePanelGroup>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <FileList
+                files={filteredFiles}
+                summaries={summaries}
+                onFileSelect={handleFileSelect}
+                selectedPath={selectedFile?.path}
+              />
+            </div>
+          </div>
         </div>
       )}
     </div>
