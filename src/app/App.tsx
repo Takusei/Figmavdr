@@ -458,12 +458,12 @@ function App() {
           <ResizablePanelGroup direction="horizontal">
             {/* Left Sidebar - Tree View */}
             <ResizablePanel defaultSize={25} minSize={15} maxSize={50}>
-              <div className="h-full bg-white flex flex-col">
-                <div className="p-4 border-b">
+              <div className="h-full bg-white flex flex-col overflow-hidden">
+                <div className="p-4 border-b flex-shrink-0">
                   <h2 className="font-semibold text-gray-700 mb-2">Folder Structure</h2>
                   <p className="text-sm text-gray-500 truncate">{rootDirectory.path}</p>
                 </div>
-                <ScrollArea className="flex-1">
+                <div className="flex-1 overflow-auto">
                   <div className="p-2">
                     <TreeView
                       nodes={[rootDirectory]}
@@ -471,7 +471,7 @@ function App() {
                       selectedPath={selectedFile?.path}
                     />
                   </div>
-                </ScrollArea>
+                </div>
               </div>
             </ResizablePanel>
 
