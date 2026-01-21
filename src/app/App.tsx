@@ -265,25 +265,7 @@ function App() {
     setError(null);
 
     try {
-      // Fetch tree structure
-      const treeResponse = await fetch(`${apiBaseUrl}/api/v1/tree`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          folderPath: folderPath.trim(),
-          regenerate: false,
-        }),
-      });
-
-      if (!treeResponse.ok) {
-        throw new Error(`Tree API error: ${treeResponse.status} ${treeResponse.statusText}`);
-      }
-
-      const treeData: ApiFileNode[] = await treeResponse.json();
-
-      // Fetch summaries with sync flag only
+      // Step 1: Fetch summaries with sync flag only
       const summaryResponse = await fetch(`${apiBaseUrl}/api/v1/summarize/folder`, {
         method: "POST",
         headers: {
@@ -301,6 +283,24 @@ function App() {
       }
 
       const summaryData: SummarizeResponse = await summaryResponse.json();
+
+      // Step 2: Fetch tree structure with regenerate flag
+      const treeResponse = await fetch(`${apiBaseUrl}/api/v1/tree`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          folderPath: folderPath.trim(),
+          regenerate: true,
+        }),
+      });
+
+      if (!treeResponse.ok) {
+        throw new Error(`Tree API error: ${treeResponse.status} ${treeResponse.statusText}`);
+      }
+
+      const treeData: ApiFileNode[] = await treeResponse.json();
 
       // Create root node
       const rootNode: FileNode = {
@@ -322,7 +322,7 @@ function App() {
       );
     } finally {
       setIsLoading(false);
-      // Re-check for changes after sync
+      // Step 3: Re-check for changes after sync (calls diff API)
       checkForChanges();
     }
   };
