@@ -194,7 +194,7 @@ export function FileList({ files, summaries, onFileSelect, selectedPath }: FileL
       ) : (
         <div className="w-full overflow-visible">
           <Table>
-            <TableHeader>
+            <TableHeader className="sticky top-0 z-10 bg-white shadow-sm">
               <TableRow>
                 <TableHead style={{ width: columnWidths.number, position: "relative" }}>
                   #
