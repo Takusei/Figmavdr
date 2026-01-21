@@ -195,17 +195,27 @@ export function FileList({ files, summaries, onFileSelect, selectedPath }: FileL
         <>
           {/* Sticky Header */}
           <div className="flex-shrink-0 bg-white border-b shadow-sm overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full" style={{ tableLayout: "fixed" }}>
+              <colgroup>
+                <col style={{ width: columnWidths.number }} />
+                <col style={{ width: columnWidths.icon }} />
+                <col style={{ width: columnWidths.name }} />
+                <col style={{ width: columnWidths.type }} />
+                <col style={{ width: columnWidths.size }} />
+                <col style={{ width: columnWidths.lastModified }} />
+                <col style={{ width: columnWidths.summary }} />
+                <col style={{ width: columnWidths.path }} />
+              </colgroup>
               <thead>
                 <tr className="border-b">
-                  <th style={{ width: columnWidths.number }} className="text-left px-4 py-3 font-medium text-sm text-gray-700">
+                  <th className="text-left px-4 py-3 font-medium text-sm text-gray-700">
                     #
                   </th>
-                  <th style={{ width: columnWidths.icon }} className="text-left px-4 py-3 font-medium text-sm text-gray-700">
+                  <th className="text-left px-4 py-3 font-medium text-sm text-gray-700">
                     {/* Icon column */}
                   </th>
                   <th 
-                    style={{ width: columnWidths.name, position: "relative", cursor: "pointer" }}
+                    style={{ position: "relative", cursor: "pointer" }}
                     className="text-left px-4 py-3 font-medium text-sm text-gray-700"
                     onClick={() => handleSort("name")}
                   >
@@ -221,7 +231,7 @@ export function FileList({ files, summaries, onFileSelect, selectedPath }: FileL
                     />
                   </th>
                   <th 
-                    style={{ width: columnWidths.type, position: "relative", cursor: "pointer" }}
+                    style={{ position: "relative", cursor: "pointer" }}
                     className="text-left px-4 py-3 font-medium text-sm text-gray-700"
                     onClick={() => handleSort("type")}
                   >
@@ -237,7 +247,7 @@ export function FileList({ files, summaries, onFileSelect, selectedPath }: FileL
                     />
                   </th>
                   <th 
-                    style={{ width: columnWidths.size, position: "relative", cursor: "pointer" }}
+                    style={{ position: "relative", cursor: "pointer" }}
                     className="text-left px-4 py-3 font-medium text-sm text-gray-700"
                     onClick={() => handleSort("size")}
                   >
@@ -253,7 +263,7 @@ export function FileList({ files, summaries, onFileSelect, selectedPath }: FileL
                     />
                   </th>
                   <th 
-                    style={{ width: columnWidths.lastModified, position: "relative", cursor: "pointer" }}
+                    style={{ position: "relative", cursor: "pointer" }}
                     className="text-left px-4 py-3 font-medium text-sm text-gray-700"
                     onClick={() => handleSort("lastModified")}
                   >
@@ -269,7 +279,7 @@ export function FileList({ files, summaries, onFileSelect, selectedPath }: FileL
                     />
                   </th>
                   <th 
-                    style={{ width: columnWidths.summary, position: "relative", cursor: "pointer" }}
+                    style={{ position: "relative", cursor: "pointer" }}
                     className="text-left px-4 py-3 font-medium text-sm text-gray-700"
                     onClick={() => handleSort("summary")}
                   >
@@ -285,7 +295,7 @@ export function FileList({ files, summaries, onFileSelect, selectedPath }: FileL
                     />
                   </th>
                   <th 
-                    style={{ width: columnWidths.path, position: "relative", cursor: "pointer" }}
+                    style={{ position: "relative", cursor: "pointer" }}
                     className="text-left px-4 py-3 font-medium text-sm text-gray-700"
                     onClick={() => handleSort("path")}
                   >
@@ -303,7 +313,17 @@ export function FileList({ files, summaries, onFileSelect, selectedPath }: FileL
 
           {/* Scrollable Body */}
           <div className="flex-1 overflow-auto">
-            <table className="w-full">
+            <table className="w-full" style={{ tableLayout: "fixed" }}>
+              <colgroup>
+                <col style={{ width: columnWidths.number }} />
+                <col style={{ width: columnWidths.icon }} />
+                <col style={{ width: columnWidths.name }} />
+                <col style={{ width: columnWidths.type }} />
+                <col style={{ width: columnWidths.size }} />
+                <col style={{ width: columnWidths.lastModified }} />
+                <col style={{ width: columnWidths.summary }} />
+                <col style={{ width: columnWidths.path }} />
+              </colgroup>
               <tbody>
                 {sortedFiles.map((file, index) => (
                   <tr
@@ -313,32 +333,32 @@ export function FileList({ files, summaries, onFileSelect, selectedPath }: FileL
                     }`}
                     onClick={() => onFileSelect(file)}
                   >
-                    <td style={{ width: columnWidths.number }} className="px-4 py-3 text-sm align-top">
+                    <td className="px-4 py-3 text-sm align-top">
                       {index + 1}
                     </td>
-                    <td style={{ width: columnWidths.icon }} className="px-4 py-3 text-sm align-top">
+                    <td className="px-4 py-3 text-sm align-top">
                       {file.isDirectory ? (
                         <Folder className="w-5 h-5 text-blue-500" />
                       ) : (
                         <FileIcon className="w-5 h-5 text-gray-500" />
                       )}
                     </td>
-                    <td style={{ width: columnWidths.name }} className="px-4 py-3 text-sm font-medium whitespace-normal break-words align-top">
+                    <td className="px-4 py-3 text-sm font-medium whitespace-normal break-words align-top">
                       {file.name}
                     </td>
-                    <td style={{ width: columnWidths.type }} className="px-4 py-3 text-sm align-top">
+                    <td className="px-4 py-3 text-sm align-top">
                       {file.isDirectory ? "Folder" : getFileExtension(file.name)}
                     </td>
-                    <td style={{ width: columnWidths.size }} className="px-4 py-3 text-sm align-top">
+                    <td className="px-4 py-3 text-sm align-top">
                       {formatFileSize(file.size)}
                     </td>
-                    <td style={{ width: columnWidths.lastModified }} className="px-4 py-3 text-sm whitespace-normal break-words align-top">
+                    <td className="px-4 py-3 text-sm whitespace-normal break-words align-top">
                       {formatDate(file.lastModified)}
                     </td>
-                    <td style={{ width: columnWidths.summary }} className="px-4 py-3 text-sm text-gray-600 whitespace-normal break-words align-top">
+                    <td className="px-4 py-3 text-sm text-gray-600 whitespace-normal break-words align-top">
                       {generateSummary(file)}
                     </td>
-                    <td style={{ width: columnWidths.path }} className="px-4 py-3 text-sm text-gray-500 whitespace-normal break-words align-top">
+                    <td className="px-4 py-3 text-sm text-gray-500 whitespace-normal break-words align-top">
                       {file.path}
                     </td>
                   </tr>
