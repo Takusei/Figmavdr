@@ -531,47 +531,49 @@ function App() {
         <div className="flex-1 overflow-hidden relative">
           <ResizablePanelGroup direction="horizontal">
             {/* Left Sidebar - Tree View (Collapsible & Resizable) */}
-            {!isSidebarCollapsed && (
-              <>
-                <ResizablePanel
-                  defaultSize={sidebarSize}
-                  minSize={15}
-                  maxSize={50}
-                  onResize={(size) => setSidebarSize(size)}
-                >
-                  <div className="h-full bg-white flex flex-col overflow-hidden">
-                    <div className="p-4 border-b flex-shrink-0">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1 min-w-0">
-                          <h2 className="font-semibold text-gray-700 mb-2">Folder Structure</h2>
-                          <p className="text-sm text-gray-500 truncate">{rootDirectory.path}</p>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setIsSidebarCollapsed(true)}
-                          className="ml-2 flex-shrink-0"
-                          title="Collapse sidebar"
-                        >
-                          <ChevronLeft className="w-4 h-4" />
-                        </Button>
-                      </div>
+            <ResizablePanel
+              defaultSize={sidebarSize}
+              minSize={isSidebarCollapsed ? 0 : 15}
+              maxSize={50}
+              collapsible={true}
+              onResize={(size) => {
+                if (size > 0) {
+                  setSidebarSize(size);
+                }
+              }}
+              className={isSidebarCollapsed ? "!flex-grow-0 !flex-shrink-0 !basis-0" : ""}
+            >
+              <div className={`h-full bg-white flex flex-col overflow-hidden transition-opacity duration-200 ${isSidebarCollapsed ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+                <div className="p-4 border-b flex-shrink-0">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <h2 className="font-semibold text-gray-700 mb-2">Folder Structure</h2>
+                      <p className="text-sm text-gray-500 truncate">{rootDirectory.path}</p>
                     </div>
-                    <div className="flex-1 overflow-auto">
-                      <div className="p-2">
-                        <TreeView
-                          nodes={[rootDirectory]}
-                          onFileSelect={handleFileSelect}
-                          selectedPath={selectedFile?.path}
-                        />
-                      </div>
-                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setIsSidebarCollapsed(true)}
+                      className="ml-2 flex-shrink-0"
+                      title="Collapse sidebar"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </Button>
                   </div>
-                </ResizablePanel>
+                </div>
+                <div className="flex-1 overflow-auto">
+                  <div className="p-2">
+                    <TreeView
+                      nodes={[rootDirectory]}
+                      onFileSelect={handleFileSelect}
+                      selectedPath={selectedFile?.path}
+                    />
+                  </div>
+                </div>
+              </div>
+            </ResizablePanel>
 
-                <ResizableHandle withHandle />
-              </>
-            )}
+            <ResizableHandle withHandle className={isSidebarCollapsed ? "invisible" : "visible"} />
 
             {/* Toggle Button (when collapsed) */}
             {isSidebarCollapsed && (
@@ -589,7 +591,7 @@ function App() {
             )}
 
             {/* Right Content - File List */}
-            <ResizablePanel defaultSize={isSidebarCollapsed ? 100 : 75}>
+            <ResizablePanel defaultSize={isSidebarCollapsed ? 100 : (100 - sidebarSize)}>
               <div className="h-full flex flex-col bg-white overflow-hidden">
                 {/* Change Detection Status Banner */}
                 {diffChecked && hasChanges && (
