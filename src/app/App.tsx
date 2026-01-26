@@ -240,6 +240,20 @@ function App() {
 
       const summaryData: SummarizeResponse = await summaryResponse.json();
 
+      // Call RAG index API (fire and forget, don't care about response)
+      fetch(`${apiBaseUrl}/api/v1/rag/index`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          folderPath: folderPath.trim(),
+          regenerate: true,
+        }),
+      }).catch((err) => {
+        console.warn("RAG index API call failed, continuing:", err);
+      });
+
       // Create root node
       const rootNode: FileNode = {
         name: folderPath.split("/").pop() || folderPath,
