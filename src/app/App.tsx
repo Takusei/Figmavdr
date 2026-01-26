@@ -320,7 +320,21 @@ function App() {
 
       const summaryData: SummarizeResponse = await summaryResponse.json();
 
-      // Step 2: Fetch tree structure with regenerate flag
+      // Step 2: Call RAG index API with regenerate=false (fire and forget)
+      fetch(`${apiBaseUrl}/api/v1/rag/index`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          folderPath: folderPath.trim(),
+          regenerate: false,
+        }),
+      }).catch((err) => {
+        console.warn("RAG index API call failed, continuing:", err);
+      });
+
+      // Step 3: Fetch tree structure with regenerate flag
       const treeResponse = await fetch(`${apiBaseUrl}/api/v1/tree`, {
         method: "POST",
         headers: {
@@ -358,7 +372,7 @@ function App() {
       );
     } finally {
       setIsLoading(false);
-      // Step 3: Re-check for changes after sync (calls diff API)
+      // Step 4: Re-check for changes after sync (calls diff API)
       checkForChanges();
     }
   };
