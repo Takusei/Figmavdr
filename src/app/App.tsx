@@ -419,10 +419,8 @@ function App() {
   // Handle search mode change
   const handleSearchModeChange = (newMode: "filename" | "semantic") => {
     setSearchMode(newMode);
-    setSearchQuery(""); // Clear search when switching modes
-    if (newMode === "filename") {
-      setSemanticSearchResult(null); // Clear semantic results when switching back
-    }
+    // Keep search history when switching modes - don't clear
+    // Users can manually clear by typing new searches
   };
 
   // Handle search input enter key
