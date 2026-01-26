@@ -419,8 +419,9 @@ function App() {
   // Handle search mode change
   const handleSearchModeChange = (newMode: "filename" | "semantic") => {
     setSearchMode(newMode);
-    // Keep search history when switching modes - don't clear
-    // Users can manually clear by typing new searches
+    // Clear input text when switching modes
+    // but keep semantic search results so users can see them when switching back to Ask AI
+    setSearchQuery("");
   };
 
   // Handle search input enter key
