@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
-import { FolderOpen, Search, Download, Loader2, AlertCircle, RefreshCw, CheckCircle, RefreshCcw, ChevronLeft, ChevronRight } from "lucide-react";
+import { FolderOpen, Search, Download, Loader2, AlertCircle, RefreshCw, CheckCircle, RefreshCcw, ChevronLeft, ChevronRight, MessageSquare, Filter } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
 import { TreeView, FileNode } from "@/app/components/TreeView";
 import { FileList } from "@/app/components/FileList";
 import { FileDetail } from "@/app/components/FileDetail";
+import { SemanticSearchResults, SemanticSearchResponse } from "@/app/components/SemanticSearchResults";
 import { ScrollArea } from "@/app/components/ui/scroll-area";
+import { Tabs, TabsList, TabsTrigger } from "@/app/components/ui/tabs";
 import * as XLSX from "xlsx";
 import {
   ResizablePanelGroup,
@@ -52,6 +54,11 @@ function App() {
   const [diffChecked, setDiffChecked] = useState(false); // Track if diff has been checked
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [sidebarSize, setSidebarSize] = useState(25); // Store the sidebar size percentage
+  
+  // Semantic search state
+  const [searchMode, setSearchMode] = useState<"filename" | "semantic">("filename");
+  const [semanticSearchResult, setSemanticSearchResult] = useState<SemanticSearchResponse | null>(null);
+  const [isSemanticSearching, setIsSemanticSearching] = useState(false);
 
   // Auto-check for changes when folder is loaded
   useEffect(() => {
@@ -326,6 +333,64 @@ function App() {
       setIsLoading(false);
       // Step 3: Re-check for changes after sync (calls diff API)
       checkForChanges();
+    }
+  };
+
+  // Handle semantic search
+  const handleSemanticSearch = async () => {
+    if (!searchQuery.trim() || !folderPath.trim()) {
+      return;
+    }
+
+    setIsSemanticSearching(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`${apiBaseUrl}/api/v1/rag/query`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          question: searchQuery.trim(),
+          folderPath: folderPath.trim(),
+          topK: 4,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`RAG API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data: SemanticSearchResponse = await response.json();
+      setSemanticSearchResult(data);
+    } catch (err) {
+      console.error("Error performing semantic search:", err);
+      setError(
+        err instanceof Error ? err.message : "Failed to perform semantic search"
+      );
+      setSemanticSearchResult(null);
+    } finally {
+      setIsSemanticSearching(false);
+    }
+  };
+
+  // Handle search mode change
+  const handleSearchModeChange = (newMode: "filename" | "semantic") => {
+    setSearchMode(newMode);
+    setSearchQuery(""); // Clear search when switching modes
+    if (newMode === "filename") {
+      setSemanticSearchResult(null); // Clear semantic results when switching back
+    }
+  };
+
+  // Handle search input enter key
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && searchQuery.trim()) {
+      if (searchMode === "semantic") {
+        handleSemanticSearch();
+      }
+      // For filename mode, the search is already reactive via searchQuery state
     }
   };
 
@@ -631,55 +696,114 @@ function App() {
                 )}
                 <div className="p-4 border-b">
                   <div className="flex items-center gap-4">
-                    <h2 className="font-semibold text-gray-700">All Files</h2>
+                    {/* Search Mode Tabs */}
+                    <Tabs value={searchMode} onValueChange={(value) => handleSearchModeChange(value as "filename" | "semantic")}>
+                      <TabsList>
+                        <TabsTrigger value="filename" className="flex items-center gap-2">
+                          <Filter className="w-4 h-4" />
+                          File Name
+                        </TabsTrigger>
+                        <TabsTrigger value="semantic" className="flex items-center gap-2">
+                          <MessageSquare className="w-4 h-4" />
+                          Ask AI
+                        </TabsTrigger>
+                      </TabsList>
+                    </Tabs>
+
+                    {/* Search Input */}
                     <div className="flex-1 max-w-md relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                       <Input
                         type="text"
-                        placeholder="Search files..."
+                        placeholder={
+                          searchMode === "filename" 
+                            ? "Filter by file name..." 
+                            : "Ask a question about your files..."
+                        }
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
+                        onKeyDown={handleSearchKeyDown}
                         className="pl-10"
                       />
                     </div>
-                    <span className="text-sm text-gray-500">
-                      {filteredFiles.length} items
-                    </span>
-                    <Button
-                      onClick={checkForChanges}
-                      variant="outline"
-                      disabled={isCheckingDiff}
-                      size="sm"
-                    >
-                      {isCheckingDiff ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Checking...
-                        </>
-                      ) : (
-                        <>
-                          <RefreshCw className="w-4 h-4 mr-2" />
-                          Check Changes
-                        </>
-                      )}
-                    </Button>
-                    <Button
-                      onClick={handleExportToExcel}
-                      variant="outline"
-                      disabled={filteredFiles.length === 0}
-                    >
-                      <Download className="w-4 h-4 mr-2" />
-                      Export to Excel
-                    </Button>
+
+                    {/* Search Button for Semantic Mode */}
+                    {searchMode === "semantic" && (
+                      <Button
+                        onClick={handleSemanticSearch}
+                        disabled={isSemanticSearching || !searchQuery.trim()}
+                        size="sm"
+                        variant="default"
+                      >
+                        {isSemanticSearching ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Searching...
+                          </>
+                        ) : (
+                          <>
+                            <MessageSquare className="w-4 h-4 mr-2" />
+                            Search
+                          </>
+                        )}
+                      </Button>
+                    )}
+
+                    {/* File Count for File Name Mode */}
+                    {searchMode === "filename" && (
+                      <span className="text-sm text-gray-500">
+                        {filteredFiles.length} items
+                      </span>
+                    )}
+
+                    {/* Action Buttons (only in filename mode) */}
+                    {searchMode === "filename" && (
+                      <>
+                        <Button
+                          onClick={checkForChanges}
+                          variant="outline"
+                          disabled={isCheckingDiff}
+                          size="sm"
+                        >
+                          {isCheckingDiff ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Checking...
+                            </>
+                          ) : (
+                            <>
+                              <RefreshCw className="w-4 h-4 mr-2" />
+                              Check Changes
+                            </>
+                          )}
+                        </Button>
+                        <Button
+                          onClick={handleExportToExcel}
+                          variant="outline"
+                          disabled={filteredFiles.length === 0}
+                        >
+                          <Download className="w-4 h-4 mr-2" />
+                          Export to Excel
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </div>
                 <div className="flex-1 overflow-hidden">
-                  <FileList
-                    files={filteredFiles}
-                    summaries={summaries}
-                    onFileSelect={handleFileSelect}
-                    selectedPath={selectedFile?.path}
-                  />
+                  {searchMode === "filename" ? (
+                    <FileList
+                      files={filteredFiles}
+                      summaries={summaries}
+                      onFileSelect={handleFileSelect}
+                      selectedPath={selectedFile?.path}
+                    />
+                  ) : (
+                    <SemanticSearchResults
+                      result={semanticSearchResult}
+                      onFileSelect={handleFileSelect}
+                      isLoading={isSemanticSearching}
+                    />
+                  )}
                 </div>
               </div>
             </ResizablePanel>
