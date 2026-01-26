@@ -203,25 +203,7 @@ function App() {
     setError(null);
 
     try {
-      // Fetch tree structure with regenerate flag
-      const treeResponse = await fetch(`${apiBaseUrl}/api/v1/tree`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          folderPath: folderPath.trim(),
-          regenerate: true,
-        }),
-      });
-
-      if (!treeResponse.ok) {
-        throw new Error(`Tree API error: ${treeResponse.status} ${treeResponse.statusText}`);
-      }
-
-      const treeData: ApiFileNode[] = await treeResponse.json();
-
-      // Fetch summaries with regenerate and sync flags
+      // Step 1: Fetch summaries with regenerate and sync flags
       const summaryResponse = await fetch(`${apiBaseUrl}/api/v1/summarize/folder`, {
         method: "POST",
         headers: {
@@ -240,7 +222,7 @@ function App() {
 
       const summaryData: SummarizeResponse = await summaryResponse.json();
 
-      // Call RAG index API (fire and forget, don't care about response)
+      // Step 2: Call RAG index API (fire and forget, don't care about response)
       fetch(`${apiBaseUrl}/api/v1/rag/index`, {
         method: "POST",
         headers: {
@@ -253,6 +235,24 @@ function App() {
       }).catch((err) => {
         console.warn("RAG index API call failed, continuing:", err);
       });
+
+      // Step 3: Fetch tree structure with regenerate flag (last)
+      const treeResponse = await fetch(`${apiBaseUrl}/api/v1/tree`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          folderPath: folderPath.trim(),
+          regenerate: true,
+        }),
+      });
+
+      if (!treeResponse.ok) {
+        throw new Error(`Tree API error: ${treeResponse.status} ${treeResponse.statusText}`);
+      }
+
+      const treeData: ApiFileNode[] = await treeResponse.json();
 
       // Create root node
       const rootNode: FileNode = {
