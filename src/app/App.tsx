@@ -8,6 +8,16 @@ import { FileDetail } from "@/app/components/FileDetail";
 import { SemanticSearchResults, SemanticSearchResponse } from "@/app/components/SemanticSearchResults";
 import { ScrollArea } from "@/app/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger } from "@/app/components/ui/tabs";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/app/components/ui/alert-dialog";
 import * as XLSX from "xlsx";
 import {
   ResizablePanelGroup,
@@ -59,6 +69,9 @@ function App() {
   const [searchMode, setSearchMode] = useState<"filename" | "semantic">("filename");
   const [semanticSearchResult, setSemanticSearchResult] = useState<SemanticSearchResponse | null>(null);
   const [isSemanticSearching, setIsSemanticSearching] = useState(false);
+  
+  // Regenerate confirmation dialog state
+  const [showRegenerateDialog, setShowRegenerateDialog] = useState(false);
 
   // Auto-check for changes when folder is loaded
   useEffect(() => {
@@ -556,7 +569,7 @@ function App() {
             </Button>
             {rootDirectory && (
               <Button
-                onClick={handleRegenerate}
+                onClick={() => setShowRegenerateDialog(true)}
                 disabled={isLoading}
                 size="sm"
                 variant="outline"
@@ -824,6 +837,43 @@ function App() {
           </ResizablePanelGroup>
         </div>
       )}
+      
+      {/* Regenerate Confirmation Dialog */}
+      <AlertDialog open={showRegenerateDialog} onOpenChange={setShowRegenerateDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-orange-600" />
+              Regenerate Folder Structure
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3 pt-2">
+              <p className="text-gray-700 font-medium">
+                This action will:
+              </p>
+              <ul className="list-disc list-inside space-y-1 text-gray-600 ml-2">
+                <li>Regenerate all file summaries</li>
+                <li>Rebuild the knowledge RAG index</li>
+                <li>Update the entire folder structure</li>
+              </ul>
+              <p className="text-orange-600 font-medium pt-2">
+                ⚠️ This process may take some time depending on the folder size.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => {
+                setShowRegenerateDialog(false);
+                handleRegenerate();
+              }}
+              className="bg-orange-600 hover:bg-orange-700"
+            >
+              Proceed with Regeneration
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
