@@ -184,6 +184,21 @@ function App() {
         console.warn(`Summary API returned ${summaryResponse.status}, continuing without summaries`);
       }
 
+      // Call RAG index API with regenerate=false and sync=true (fire and forget)
+      fetch(`${apiBaseUrl}/api/v1/rag/index`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          folderPath: folderPath.trim(),
+          regenerate: false,
+          sync: true,
+        }),
+      }).catch((err) => {
+        console.warn("RAG index API call failed, continuing:", err);
+      });
+
       // Create root node
       const rootNode: FileNode = {
         name: folderPath.split("/").pop() || folderPath,
