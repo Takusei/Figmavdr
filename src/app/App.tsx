@@ -184,8 +184,8 @@ function App() {
         console.warn(`Summary API returned ${summaryResponse.status}, continuing without summaries`);
       }
 
-      // Call RAG index API with regenerate=false and sync=true (fire and forget)
-      fetch(`${apiBaseUrl}/api/v1/rag/index`, {
+      // Call RAG index API with regenerate=false and sync=true (await the response)
+      const ragResponse = await fetch(`${apiBaseUrl}/api/v1/rag/index`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -195,9 +195,11 @@ function App() {
           regenerate: false,
           sync: true,
         }),
-      }).catch((err) => {
-        console.warn("RAG index API call failed, continuing:", err);
       });
+
+      if (!ragResponse.ok) {
+        console.warn(`RAG index API returned ${ragResponse.status}, continuing without RAG indexing`);
+      }
 
       // Create root node
       const rootNode: FileNode = {
