@@ -160,32 +160,8 @@ function App() {
         throw new Error("No data returned from tree API");
       }
 
-      // Fetch summaries
-      const summaryResponse = await fetch(`${apiBaseUrl}/api/v1/summarize/folder`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          folderPath: folderPath.trim(),
-          regenerate: false,
-        }),
-      });
-
-      let summaryData: SummarizeResponse = { summaries: [], duration: 0 };
-      
-      if (summaryResponse.ok) {
-        try {
-          summaryData = await summaryResponse.json();
-        } catch (err) {
-          console.warn("Failed to parse summary response, using fallback:", err);
-        }
-      } else {
-        console.warn(`Summary API returned ${summaryResponse.status}, continuing without summaries`);
-      }
-
-      // Call RAG index API with regenerate=false and sync=true (await the response)
-      const ragResponse = await fetch(`${apiBaseUrl}/api/v1/rag/index`, {
+      // Call combined summary and index API with regenerate=false and sync=true
+      const summaryAndIndexResponse = await fetch(`${apiBaseUrl}/api/v1/summary-and-index/folder`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -197,8 +173,16 @@ function App() {
         }),
       });
 
-      if (!ragResponse.ok) {
-        console.warn(`RAG index API returned ${ragResponse.status}, continuing without RAG indexing`);
+      let summaryData: SummarizeResponse = { summaries: [], duration: 0 };
+      
+      if (summaryAndIndexResponse.ok) {
+        try {
+          summaryData = await summaryAndIndexResponse.json();
+        } catch (err) {
+          console.warn("Failed to parse summary response, using fallback:", err);
+        }
+      } else {
+        console.warn(`Summary and Index API returned ${summaryAndIndexResponse.status}, continuing without summaries`);
       }
 
       // Create root node
@@ -233,8 +217,8 @@ function App() {
     setError(null);
 
     try {
-      // Step 1: Fetch summaries with regenerate and sync flags
-      const summaryResponse = await fetch(`${apiBaseUrl}/api/v1/summarize/folder`, {
+      // Step 1: Call combined summary and index API with regenerate=true and sync=false
+      const summaryAndIndexResponse = await fetch(`${apiBaseUrl}/api/v1/summary-and-index/folder`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -242,31 +226,17 @@ function App() {
         body: JSON.stringify({
           folderPath: folderPath.trim(),
           regenerate: true,
-          sync: true,
+          sync: false,
         }),
       });
 
-      if (!summaryResponse.ok) {
-        throw new Error(`Summary API error: ${summaryResponse.status} ${summaryResponse.statusText}`);
+      if (!summaryAndIndexResponse.ok) {
+        throw new Error(`Summary and Index API error: ${summaryAndIndexResponse.status} ${summaryAndIndexResponse.statusText}`);
       }
 
-      const summaryData: SummarizeResponse = await summaryResponse.json();
+      const summaryData: SummarizeResponse = await summaryAndIndexResponse.json();
 
-      // Step 2: Call RAG index API (fire and forget, don't care about response)
-      fetch(`${apiBaseUrl}/api/v1/rag/index`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          folderPath: folderPath.trim(),
-          regenerate: true,
-        }),
-      }).catch((err) => {
-        console.warn("RAG index API call failed, continuing:", err);
-      });
-
-      // Step 3: Fetch tree structure with regenerate flag (last)
+      // Step 2: Fetch tree structure with regenerate flag (last)
       const treeResponse = await fetch(`${apiBaseUrl}/api/v1/tree`, {
         method: "POST",
         headers: {
@@ -318,8 +288,8 @@ function App() {
     setError(null);
 
     try {
-      // Step 1: Fetch summaries with sync flag only
-      const summaryResponse = await fetch(`${apiBaseUrl}/api/v1/summarize/folder`, {
+      // Step 1: Call combined summary and index API with regenerate=false and sync=true
+      const summaryAndIndexResponse = await fetch(`${apiBaseUrl}/api/v1/summary-and-index/folder`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -331,27 +301,13 @@ function App() {
         }),
       });
 
-      if (!summaryResponse.ok) {
-        throw new Error(`Summary API error: ${summaryResponse.status} ${summaryResponse.statusText}`);
+      if (!summaryAndIndexResponse.ok) {
+        throw new Error(`Summary and Index API error: ${summaryAndIndexResponse.status} ${summaryAndIndexResponse.statusText}`);
       }
 
-      const summaryData: SummarizeResponse = await summaryResponse.json();
+      const summaryData: SummarizeResponse = await summaryAndIndexResponse.json();
 
-      // Step 2: Call RAG index API with regenerate=false (fire and forget)
-      fetch(`${apiBaseUrl}/api/v1/rag/index`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          folderPath: folderPath.trim(),
-          regenerate: false,
-        }),
-      }).catch((err) => {
-        console.warn("RAG index API call failed, continuing:", err);
-      });
-
-      // Step 3: Fetch tree structure with regenerate flag
+      // Step 2: Fetch tree structure with regenerate flag
       const treeResponse = await fetch(`${apiBaseUrl}/api/v1/tree`, {
         method: "POST",
         headers: {
@@ -389,7 +345,7 @@ function App() {
       );
     } finally {
       setIsLoading(false);
-      // Step 4: Re-check for changes after sync (calls diff API)
+      // Step 3: Re-check for changes after sync (calls diff API)
       checkForChanges();
     }
   };
