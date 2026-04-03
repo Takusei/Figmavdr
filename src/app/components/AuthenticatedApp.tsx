@@ -27,7 +27,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/app/components/ui/dropdown-menu";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 import {
   ResizablePanelGroup,
   ResizablePanel,
@@ -459,63 +459,89 @@ export function AuthenticatedApp() {
         })
     : [];
 
-  const handleExportToExcel = () => {
-    const exportData = filteredFiles.map((file) => {
-      const formatFileSize = (bytes?: number) => {
-        if (!bytes) return "—";
-        const units = ["B", "KB", "MB", "GB", "TB"];
-        let size = bytes;
-        let unitIndex = 0;
-        while (size >= 1024 && unitIndex < units.length - 1) {
-          size /= 1024;
-          unitIndex++;
-        }
-        return `${size.toFixed(2)} ${units[unitIndex]}`;
-      };
+  const handleExportToExcel = async () => {
+    const formatFileSize = (bytes?: number) => {
+      if (!bytes) return "—";
+      const units = ["B", "KB", "MB", "GB", "TB"];
+      let size = bytes;
+      let unitIndex = 0;
+      while (size >= 1024 && unitIndex < units.length - 1) {
+        size /= 1024;
+        unitIndex++;
+      }
+      return `${size.toFixed(2)} ${units[unitIndex]}`;
+    };
 
-      const formatDate = (timestamp?: number) => {
-        if (!timestamp) return "—";
-        return new Date(timestamp).toLocaleString();
-      };
+    const formatDate = (timestamp?: number) => {
+      if (!timestamp) return "—";
+      return new Date(timestamp).toLocaleString();
+    };
 
-      const getFileExtension = (filename: string) => {
-        const parts = filename.split(".");
-        return parts.length > 1 ? parts[parts.length - 1].toUpperCase() : "—";
-      };
+    const getFileExtension = (filename: string) => {
+      const parts = filename.split(".");
+      return parts.length > 1 ? parts[parts.length - 1].toUpperCase() : "—";
+    };
 
-      const apiSummary = summaries.find(s => s.filePath === file.path);
+    // Create a new workbook
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = "Virtual Data Room";
+    workbook.created = new Date();
 
-      return {
-        Name: file.name,
-        Type: file.isDirectory ? "Folder" : getFileExtension(file.name),
-        Size: formatFileSize(file.size),
-        "Last Modified": formatDate(file.lastModified),
-        Summary: apiSummary?.summary || "No summary available",
-        Path: file.path,
-      };
-    });
+    // Add a worksheet
+    const worksheet = workbook.addWorksheet("Files");
 
-    const worksheet = XLSX.utils.json_to_sheet(exportData);
-
-    worksheet["!cols"] = [
-      { wch: 30 },
-      { wch: 10 },
-      { wch: 12 },
-      { wch: 20 },
-      { wch: 40 },
-      { wch: 50 },
+    // Define columns
+    worksheet.columns = [
+      { header: "Name", key: "name", width: 30 },
+      { header: "Type", key: "type", width: 10 },
+      { header: "Size", key: "size", width: 12 },
+      { header: "Last Modified", key: "lastModified", width: 20 },
+      { header: "Summary", key: "summary", width: 40 },
+      { header: "Path", key: "path", width: 50 },
     ];
 
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Files");
+    // Style the header row
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FFE0E0E0" },
+    };
 
+    // Add data rows
+    filteredFiles.forEach((file) => {
+      const apiSummary = summaries.find(s => s.filePath === file.path);
+      worksheet.addRow({
+        name: file.name,
+        type: file.isDirectory ? "Folder" : getFileExtension(file.name),
+        size: formatFileSize(file.size),
+        lastModified: formatDate(file.lastModified),
+        summary: apiSummary?.summary || "No summary available",
+        path: file.path,
+      });
+    });
+
+    // Generate file name with timestamp
     const timestamp = new Date()
       .toISOString()
       .replace(/[:.]/g, "-")
       .slice(0, -5);
     const fileName = `VDR_Export_${timestamp}.xlsx`;
 
-    XLSX.writeFile(workbook, fileName);
+    // Write to browser
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+
+    // Create download link
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = fileName;
+    link.click();
+
+    // Clean up
+    URL.revokeObjectURL(link.href);
   };
 
   const handleLogout = () => {
